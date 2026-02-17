@@ -15,9 +15,9 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import redrocklib.logging.SmartDashboardNumber;
 
 public class Intake extends SubsystemBase{
-    public static Intake instance;
-    SparkMax hingeMotor = new SparkMax(49, MotorType.kBrushless);
-    SparkMax rollerMotor = new SparkMax(49, MotorType.kBrushless);
+    public static Intake instance = null;
+    private final SparkMax hingeMotor = new SparkMax(49, MotorType.kBrushless);
+    private final SparkMax rollerMotor = new SparkMax(49, MotorType.kBrushless);
 
     SparkClosedLoopController hingeMotorController = hingeMotor.getClosedLoopController();
     SparkClosedLoopController rollerMotorController = rollerMotor.getClosedLoopController();
@@ -39,9 +39,10 @@ public class Intake extends SubsystemBase{
     SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", 0);
     SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
 
+    SparkMaxConfig hingeConfig = new SparkMaxConfig();
+    SparkMaxConfig rollerConfig = new SparkMaxConfig();
     public Intake(){
         super();
-        SparkMaxConfig hingeConfig = new SparkMaxConfig();
         hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
         hingeConfig.closedLoop
             .p(kPHinge.getNumber())
@@ -49,7 +50,6 @@ public class Intake extends SubsystemBase{
             .d(kDHinge.getNumber())
             .outputRange(kMinOutputHinge.getNumber(), kMaxOutputHinge.getNumber());
 
-        SparkMaxConfig rollerConfig = new SparkMaxConfig();
         rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
         rollerConfig.closedLoop
             .p(kPRoller.getNumber())
@@ -66,19 +66,19 @@ public class Intake extends SubsystemBase{
         this.hingeMotorController.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
     }
 
-    public void setIntakeSpeed(double speed){
+    public void setIntakeSpeedRPM(double speed){
         this.rollerMotorController.setSetpoint(speed,ControlType.kVelocity);
     }
     public void startIntaking(){
-        this.setIntakeSpeed(intakeSpeed.getNumber());
+        this.setIntakeSpeedRPM(intakeSpeed.getNumber());
     }
 
     public void regurgitateIntake(){
-        this.setIntakeSpeed(backSpeed.getNumber());;
+        this.setIntakeSpeedRPM(backSpeed.getNumber());
     }
 
     public void stopIntakeRoller(){
-        this.setIntakeSpeed(0);
+        this.setIntakeSpeedRPM(0);
     }
 
     public void normalizeIntake(){
@@ -141,9 +141,10 @@ public class Intake extends SubsystemBase{
         ||this.kDRoller.hasChanged() 
         ||this.kMinOutputRoller.hasChanged() 
         ||this.kMaxOutputRoller.hasChanged() 
-        ){
-            this.kPHinge = SmartDashboard.getNumber("Intake/kPhinge",kPHinge);
-        }
+    ){
+        this.hingeConfig.closedLoop.p(this.kPHinge.getNumber()).i(this.kIHinge.getNumber()).d(this.kDHinge.getNumber()).minOutput(this.kMinOutputHinge.getNumber());
+        this.rollerConfig.closedLoop.p(this.kPRoller.getNumber()).i(this.kIRoller.getNumber()).d(this.kDRoller.getNumber()).minOutput(this.kMinOutputRoller.getNumber()).maxOutput(this.kMaxOutputHinge.getNumber());
+    }
     }
 
 }
