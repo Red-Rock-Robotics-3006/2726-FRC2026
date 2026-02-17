@@ -6,7 +6,7 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
+// import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
@@ -27,8 +27,11 @@ import redrocklib.wrappers.RedRockTalon;
 public class Shooter extends SubsystemBase{
     public static Shooter instance = null;
 
+    private Tank tank = Tank.getInstance();
+    private LED leds = LED.getInstance();
     private RedRockTalon shooterMotor = new RedRockTalon(45, "shooterMotor");
     private SparkMax indexMotor = new SparkMax(45,MotorType.kBrushless);
+    private boolean tankFrozen = false;
 
     SparkMaxConfig indexConfig = new SparkMaxConfig();
 
@@ -37,7 +40,7 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardNumber shootSpeedReverse = new SmartDashboardNumber("Shooter/shootingSpeedReverseRPM", 0);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexShootSpeedRPM", 0);
     private SmartDashboardNumber indexDeclogSpeed = new SmartDashboardNumber("Shooter/indexDeclogSpeedRPM", 0);
-    private SmartDashboardNumber shooterTriggerVelocity = new SmartDashboardNumber("Shooter/shooterTriggerVelocity", 0)
+    private SmartDashboardNumber shooterTriggerVelocity = new SmartDashboardNumber("Shooter/shooterTriggerVelocity", 0);
 
     private SmartDashboardNumber kPIndex = new SmartDashboardNumber("Shooter/kPIndex", 0);
     private SmartDashboardNumber kIIndex = new SmartDashboardNumber("Shooter/kIIndex", 0);
@@ -142,9 +145,6 @@ public class Shooter extends SubsystemBase{
             Commands.runOnce(() -> this.stopIndexing(), this)
         );
     }
-
-//AutoALign Commands
-
     
 
 //Commands for odd situations
