@@ -26,6 +26,8 @@ import redrocklib.logging.SmartDashboardNumber;
 
 public class Tank extends SubsystemBase{
     private static Tank instance = null;
+    private Shooter shooter = Shooter.getInstance();
+    private LED leds = LED.getInstance();
     private SparkMax leftFront = new SparkMax(16, MotorType.kBrushless);
     private SparkMax rightFront = new SparkMax(16, MotorType.kBrushless);
     private SparkMax leftBack = new SparkMax(16, MotorType.kBrushless);
@@ -176,11 +178,11 @@ public class Tank extends SubsystemBase{
         return this.turnToLobPointCommand();
     }
 
-    public Tank getInstance(){
-        if(this.instance == null){
+    public static Tank getInstance(){
+        if(instance == null){
             instance = new Tank();
         }
-        return this.instance;
+        return instance;
     }
     @Override
     public void periodic(){

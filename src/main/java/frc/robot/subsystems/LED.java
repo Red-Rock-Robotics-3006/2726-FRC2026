@@ -1,7 +1,10 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Seconds;
+
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
+import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -15,7 +18,8 @@ public class LED extends SubsystemBase{
     private final Color WHITE = new Color(255, 255, 255);
     private final Color GREEN = new Color(0, 255, 0);
     private final Color RED = new Color(255, 0, 0);
-    
+    private final Color ORANGE = new Color(255, 128, 0);
+    private final LEDPattern ORANGE_BLINK = LEDPattern.solid(ORANGE).blink(Seconds.of(0.3));
     private LED(){
         super("LED");
         control.setLength(buffer.getLength());
@@ -45,7 +49,22 @@ public class LED extends SubsystemBase{
         }
     }
 
+    public void setLEDTankDisable(){
+        ORANGE_BLINK.applyTo(this.buffer);
+    }
     
+    public void setLEDDisable(){
+        this.setLights(RED);
+    }
+
+    public void setLEDShooting(){
+        this.setLights(GREEN);
+    }
+
+    public void setLEDIntaking(){
+        this.setLights(WHITE);
+    }
+
 
     @Override
     public void periodic(){
