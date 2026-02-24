@@ -63,7 +63,7 @@ public class Tank extends SubsystemBase{
 
 
     private Tank(){
-        super("tank");
+        super("Tank");
 
         SparkMaxConfig rightConfig = new SparkMaxConfig();
         SparkMaxConfig leftConfig = new SparkMaxConfig();
@@ -176,23 +176,19 @@ public class Tank extends SubsystemBase{
     }
 
     public Command turnToHubCommand(){
-        return Commands.defer(() -> {
-            if(this.isAtAngle()){ 
-                this.driveRaw(0, 0);
-                return Commands.none();
-            }
-            return Commands.run(() -> this.turnToHubAngle(), this);}, 
-        Set.of(this));
+        if(this.isAtAngle()){ 
+            this.driveRaw(0, 0);
+            return Commands.none();
+        }
+        return Commands.run(() -> this.turnToHubAngle(), this);
     }
 
     public Command turnToLobCommand(){
-        return Commands.defer(() -> {
-            if(this.isAtAngle()){ 
-                this.driveRaw(0, 0);
-                return Commands.none();
-            }
-            return Commands.run(() -> this.turnToLobbingAngle(), this);}, 
-        Set.of(this));
+        if(this.isAtAngle()){ 
+            this.driveRaw(0, 0);
+            return Commands.none();
+        }
+        return Commands.run(() -> this.turnToLobbingAngle(), this);
     }
 
     //Turns to hub if in alliance zone turns to lobbing point if not (0-4 m blue zone, 12.6m > red zone)

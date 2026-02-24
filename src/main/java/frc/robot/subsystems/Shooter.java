@@ -27,30 +27,22 @@ import redrocklib.wrappers.RedRockTalon;
 
 
 public class Shooter extends SubsystemBase{
-    private Shooter instance = null;
+    private static Shooter instance = null;
 
     private Tank tank = Tank.getInstance();
-    private LED led = LED.getInstance();
+    private Conveyor conveyor = Conveyor.getInstance();
 
-    private final RedRockTalon shooterMotor = new RedRockTalon(0, "shooter moter");
-    private final SparkMax indexMotor = new SparkMax(0, MotorType.kBrushless);
-    private SparkMaxConfig indexConfig = new SparkMaxConfig();
-    private final SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
+    private final RedRockTalon shooterMotor1 = new RedRockTalon(0, "Shooter/shooterMotor1");
+    private final RedRockTalon shooterMotor2 = new RedRockTalon(0, "Shooter/shooterMotor2");
 
-    private final Color WHITE = new Color(255, 255, 255);
-    private final Color BLUE = new Color(0, 0, 255);
-
-    private SmartDashboardNumber indexerSpeed = new SmartDashboardNumber("shooter/indexerSpeed", 0); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("shooter/indexKp", 0); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("shooter/indexKi", 0); //TODO
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("shooter/indexKd", 0); //TODO
 
-    private SmartDashboardBoolean autoAimActive = new SmartDashboardBoolean("shooter/autoAimActive", false);
-    
     private Shooter(){
         super("Shooter");
                 
-        this.shooterMotor.withMotorOutputConfigs(
+        this.shooterMotor1.withMotorOutputConfigs(
             new MotorOutputConfigs()
             .withInverted(InvertedValue.Clockwise_Positive)
             .withPeakForwardDutyCycle(1d)
@@ -80,29 +72,54 @@ public class Shooter extends SubsystemBase{
             .withStatorCurrentLimit(60)
             .withStatorCurrentLimitEnable(true)
         ).withTuningEnabled(false);
+        
+        this.shooterMotor2.withMotorOutputConfigs(
+            new MotorOutputConfigs()
+            .withInverted(InvertedValue.CounterClockwise_Positive)
+            .withPeakForwardDutyCycle(1d)
+            .withPeakReverseDutyCycle(-1d)
+            .withNeutralMode(NeutralModeValue.Coast)
+        )
+        .withSlot0Configs(
+            new Slot0Configs()
+            .withKA(0) //TODO
+            .withKS(0) //TODO
+            .withKV(0) //TODO
+            .withKP(0) //TODO
+            .withKI(0) //TODO
+            .withKD(0) //TODO 
+        )
+        .withMotionMagicConfigs(
+            new MotionMagicConfigs()
+            .withMotionMagicAcceleration(850)
+            .withMotionMagicCruiseVelocity(150)
+            .withMotionMagicJerk(10000000)
+        )
+        .withSpikeThreshold(17)
+        .withCurrentLimitConfigs(
+            new CurrentLimitsConfigs()
+            .withSupplyCurrentLimit(45)
+            .withSupplyCurrentLimitEnable(true)
+            .withStatorCurrentLimit(60)
+            .withStatorCurrentLimitEnable(true)
+        ).withTuningEnabled(false);
 
-        indexConfig.idleMode(IdleMode.kBrake);
-        indexConfig.closedLoop
-        .p(indexKp.getNumber())
-        .i(indexKi.getNumber())
-        .d(indexKd.getNumber());
-        indexMotor.configure(indexConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        // indexConfig.idleMode(IdleMode.kBrake);
+        // indexConfig.closedLoop
+        // .p(indexKp.getNumber())
+        // .i(indexKi.getNumber())
+        // .d(indexKd.getNumber());
+        // indexMotor.configure(indexConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
     public void setShooterSpeedRPM(int RPM){
-        this.shooterMotor.setMotionMagicVelocity(RPM);
+        this.shooterMotor1.setMotionMagicVelocity(RPM);
+        this.shooterMotor2.setMotionMagicVelocity(RPM);
     }
 
     public void stopShooter(){
-        this.shooterMotor.setMotionMagicVelocity(0);
-    }
-
-    public void setIndexerSpeed(){
-        this.indexController.setSetpoint(indexerSpeed.getNumber(), ControlType.kVelocity); 
-    }
-
-    public void stopIndexer(){
-        this.indexMotor.set(0);
+        this.shooterMotor1.setMotionMagicVelocity(0);
+        this.shooterMotor2.setMotionMagicVelocity(0);
     }
 
     //Returns speed from bestfit curve
@@ -112,14 +129,15 @@ public class Shooter extends SubsystemBase{
 
     public boolean isAtShooterSpeed(){ //Checks if shooter is up to speed
         return (Math.abs(this.getSpeed(tank.getRobotPose().getX()) - 
-        shooterMotor.motor.getVelocity().getValueAsDouble()*60.0)) <= 100; //getVelocity() is in RPS so convert to RPM
+        shooterMotor1.motor.getVelocity().getValueAsDouble()*60.0)) <= 100 && (Math.abs(this.getSpeed(tank.getRobotPose().getX()) - 
+        shooterMotor2.motor.getVelocity().getValueAsDouble()*60.0)) <= 100; //getVelocity() is in RPS so convert to RPM
     }
 
     public Command shootIndexCommand(){
         return Commands.sequence(
             Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.getSpeed(tank.getXDistanceFromHub())), this), //TODO
             Commands.waitUntil(() -> this.isAtShooterSpeed()),
-            Commands.runOnce(() -> this.setIndexerSpeed(), this)
+            conveyor.feedConveyorForwardCommand()
         );
     }
 
@@ -127,18 +145,28 @@ public class Shooter extends SubsystemBase{
         return Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.getSpeed(tank.getXDistanceFromHub())), this); //TODO
     }
 
-    public Command autoAlignShootCommand(){
-        autoAimActive.setDefaultValue(true);
-        return Commands.sequence(
-            Commands.runOnce(() -> led.setLightsBlink(WHITE, 1)),
-            tank.turnCommand(),
-            this.shootCommand(),
-            Commands.parallel(
-                Commands.waitUntil(() -> tank.isAtAngle()),
-                Commands.waitUntil(() -> this.isAtShooterSpeed())
-            ),
-            Commands.runOnce(() -> led.setLights(BLUE)),
-            Commands.runOnce(() -> this.setIndexerSpeed())
-        );
+    // public Command autoAlignShootCommand(){
+    //     autoAimActive.setDefaultValue(true);
+    //     return Commands.sequence(
+    //         Commands.runOnce(() -> led.setLightsBlink(WHITE, 1)),
+    //         tank.turnCommand(),
+    //         this.shootCommand(),
+    //         Commands.parallel(
+    //             Commands.waitUntil(() -> tank.isAtAngle()),
+    //             Commands.waitUntil(() -> this.isAtShooterSpeed())
+    //         ),
+    //         Commands.runOnce(() -> led.setLights(BLUE)),
+    //         Commands.runOnce(() -> conveyor.feedConveyorForwardCommand())
+    //     );
+    // }
+    @Override
+    public void periodic(){
+        shooterMotor1.update();
+        shooterMotor2.update();
+    }
+
+    public static Shooter getInstance(){
+        if(instance == null) instance = new Shooter();
+        return instance;
     }
 }

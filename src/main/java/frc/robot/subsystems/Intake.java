@@ -43,6 +43,7 @@ public class Intake extends SubsystemBase{
     private Intake(){
 
         super("Intake");
+        
         intakeConfig.idleMode(IdleMode.kBrake);
         intakeConfig.closedLoop  //TODO
             .p(intakekP.getNumber())

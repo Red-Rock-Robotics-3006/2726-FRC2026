@@ -31,6 +31,8 @@ public class Conveyor extends SubsystemBase {
     private SmartDashboardNumber kD = new SmartDashboardNumber("Conveyor/kD", 0);  //TODO
 
     private Conveyor(){
+        super("Conveyor");
+
         config.idleMode(IdleMode.kBrake);
         config.closedLoop
             .p(kP.getNumber())
@@ -77,7 +79,7 @@ public class Conveyor extends SubsystemBase {
         SmartDashboard.putNumber("Conveyor/conveyor-current-velocity", conveyMotor.getEncoder().getVelocity());
     }
 
-    public static Conveyor getInstace(){
+    public static Conveyor getInstance(){
         if(instance == null) instance = new Conveyor();
         return instance;
     }

@@ -22,6 +22,7 @@ public class LED extends SubsystemBase{
     
     private LED(){
         super("LED");
+        
         this.control.setLength(buffer.getLength());
         this.control.setColorOrder(AddressableLED.ColorOrder.kRGB);
         this.setLights(INIT_YELLOW);

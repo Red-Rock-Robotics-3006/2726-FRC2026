@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Conveyor;
 import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Tank;
 
 public class RobotContainer {
@@ -17,19 +18,22 @@ public class RobotContainer {
   private final CommandXboxController driveStick = new CommandXboxController(0);
   private final CommandXboxController mechStick = new CommandXboxController(0);
 
-  private final Conveyor conveyor = Conveyor.getInstace();
+  private final Conveyor conveyor = Conveyor.getInstance();
   private final Intake intake = Intake.getInstance();
   private final Tank tank = Tank.getInstance();
+  private final Shooter shooter = Shooter.getInstance();
 
   public RobotContainer() {
     configureBindings();
-    //configureDrive();
   }
 
   private void configureBindings() {
     
     this.mechStick.b()
-      .whileTrue(tank.turnCommand());
+      .whileTrue(Commands.sequence(
+        tank.turnCommand(),
+        shooter.shootIndexCommand()
+      ));
 
     this.mechStick.rightTrigger() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
       .whileTrue(intake.startIntakingCommand())
@@ -47,12 +51,6 @@ public class RobotContainer {
       Commands.run(() -> tank.drive(-driveStick.getLeftY(), driveStick.getRightX()), tank)
     );
   }
-
-  // public void configureDrive(){
-  //     tank.setDefaultCommand( 
-  //       new InstantCommand(() -> {tank.drive(driveStick.getLeftY(), driveStick.getRightX());}, tank)
-  //     );
-  // }
 
   public Command getAutonomousCommand() {
     return Commands.print("No autonomous command configured");
