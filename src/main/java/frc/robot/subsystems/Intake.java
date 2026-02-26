@@ -18,8 +18,8 @@ import redrocklib.logging.SmartDashboardNumber;
 public class Intake extends SubsystemBase{
     private static Intake instance = null;
 
-    private final SparkMax intakeMotor = new SparkMax(0, MotorType.kBrushless); //TODO
-    private final SparkMax hingeMotor = new SparkMax(0, MotorType.kBrushless); //TODO
+    private final SparkMax intakeMotor = new SparkMax(1, MotorType.kBrushless); //TODO
+    private final SparkMax hingeMotor = new SparkMax(2, MotorType.kBrushless); //TODO
 
     private final SparkClosedLoopController intake_controller = intakeMotor.getClosedLoopController();
     private final SparkClosedLoopController hinge_controller = hingeMotor.getClosedLoopController();

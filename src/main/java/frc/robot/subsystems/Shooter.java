@@ -32,8 +32,8 @@ public class Shooter extends SubsystemBase{
     private Tank tank = Tank.getInstance();
     private Conveyor conveyor = Conveyor.getInstance();
 
-    private final RedRockTalon shooterMotor1 = new RedRockTalon(0, "Shooter/shooterMotor1");
-    private final RedRockTalon shooterMotor2 = new RedRockTalon(0, "Shooter/shooterMotor2");
+    private final RedRockTalon shooterMotor1 = new RedRockTalon(4, "Shooter/shooterMotor1");
+    private final RedRockTalon shooterMotor2 = new RedRockTalon(5, "Shooter/shooterMotor2");
 
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("shooter/indexKp", 0); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("shooter/indexKi", 0); //TODO

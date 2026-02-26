@@ -33,10 +33,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 public class Tank extends SubsystemBase{
     private static Tank instance = null;
 
-    private SparkMax rightFront = new SparkMax(0, MotorType.kBrushless);
-    private SparkMax rightBack = new SparkMax(0, MotorType.kBrushless);
-    private SparkMax leftFront = new SparkMax(0, MotorType.kBrushless);
-    private SparkMax leftBack = new SparkMax(0, MotorType.kBrushless);
+    private SparkMax rightFront = new SparkMax(6, MotorType.kBrushless);
+    private SparkMax rightBack = new SparkMax(7, MotorType.kBrushless);
+    private SparkMax leftFront = new SparkMax(8, MotorType.kBrushless);
+    private SparkMax leftBack = new SparkMax(9, MotorType.kBrushless);
 
     private String[] limelights = {"limelight1", "limelight2", "limelight3"};
     private double[][] limelightStDev = {{0.7, 0.7, 99999}, {0.7, 0.7, 99999}, {0.7, 0.7, 99999}};

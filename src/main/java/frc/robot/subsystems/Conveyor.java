@@ -18,7 +18,7 @@ import redrocklib.logging.SmartDashboardNumber;
 public class Conveyor extends SubsystemBase {
     private static Conveyor instance = null;
 
-    private final SparkMax conveyMotor = new SparkMax(0, MotorType.kBrushless); //TODO
+    private final SparkMax conveyMotor = new SparkMax(3, MotorType.kBrushless); //TODO
 
     private final SparkClosedLoopController controller = conveyMotor.getClosedLoopController();
 
