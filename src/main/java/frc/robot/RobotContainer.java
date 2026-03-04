@@ -32,7 +32,7 @@ public class RobotContainer {
     this.mechStick.b()
       .whileTrue(Commands.sequence(
         tank.turnCommand(),
-        shooter.shootIndexCommand()
+        shooter.autoAimshootCommand()
       ));
 
     this.mechStick.rightTrigger() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed

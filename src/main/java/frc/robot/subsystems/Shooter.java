@@ -17,6 +17,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -30,11 +31,17 @@ public class Shooter extends SubsystemBase{
     private static Shooter instance = null;
 
     private Tank tank = Tank.getInstance();
-    private Conveyor conveyor = Conveyor.getInstance();
 
     private final RedRockTalon shooterMotor1 = new RedRockTalon(4, "Shooter/shooterMotor1");
     private final RedRockTalon shooterMotor2 = new RedRockTalon(5, "Shooter/shooterMotor2");
+    private final SparkMax indexMotor = new SparkMax(0, MotorType.kBrushless);
 
+    private SparkMaxConfig indexConfig = new SparkMaxConfig();
+    private SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
+
+    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("shooter/hubShooterSpeed", 500); //TODO
+    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("shooter/awayHubShooterSpeed", 500); //TODO
+    private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("shooter/indexSpeed", 100); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("shooter/indexKp", 0); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("shooter/indexKi", 0); //TODO
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("shooter/indexKd", 0); //TODO
@@ -104,15 +111,15 @@ public class Shooter extends SubsystemBase{
             .withStatorCurrentLimitEnable(true)
         ).withTuningEnabled(false);
 
-        // indexConfig.idleMode(IdleMode.kBrake);
-        // indexConfig.closedLoop
-        // .p(indexKp.getNumber())
-        // .i(indexKi.getNumber())
-        // .d(indexKd.getNumber());
-        // indexMotor.configure(indexConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        indexConfig.idleMode(IdleMode.kBrake);
+        indexConfig.closedLoop
+        .p(indexKp.getNumber())
+        .i(indexKi.getNumber())
+        .d(indexKd.getNumber());
+        indexMotor.configure(indexConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
-    public void setShooterSpeedRPM(int RPM){
+    public void setShooterSpeedRPM(double RPM){
         this.shooterMotor1.setMotionMagicVelocity(RPM);
         this.shooterMotor2.setMotionMagicVelocity(RPM);
     }
@@ -120,6 +127,18 @@ public class Shooter extends SubsystemBase{
     public void stopShooter(){
         this.shooterMotor1.setMotionMagicVelocity(0);
         this.shooterMotor2.setMotionMagicVelocity(0);
+    }
+
+    public void setIndexSpeed(){
+        this.indexController.setSetpoint(this.indexSpeed.getNumber(), ControlType.kVelocity);
+    }
+    
+    public void setIndexBackwardSpeed(){
+        this.indexController.setSetpoint(-this.indexSpeed.getNumber(), ControlType.kVelocity);
+    }
+
+    public void stopIndexer(){
+        this.indexMotor.set(0);
     }
 
     //Returns speed from bestfit curve
@@ -133,36 +152,48 @@ public class Shooter extends SubsystemBase{
         shooterMotor2.motor.getVelocity().getValueAsDouble()*60.0)) <= 100; //getVelocity() is in RPS so convert to RPM
     }
 
-    public Command shootIndexCommand(){
+    public Command autoAimshootCommand(){
         return Commands.sequence(
             Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.getSpeed(tank.getXDistanceFromHub())), this), //TODO
             Commands.waitUntil(() -> this.isAtShooterSpeed()),
-            conveyor.feedConveyorForwardCommand()
+            Commands.runOnce(()-> this.setIndexSpeed())
         );
     }
 
-    public Command shootCommand(){
-        return Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.getSpeed(tank.getXDistanceFromHub())), this); //TODO
+    public Command shootCommandHub(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber())),
+            Commands.waitUntil(() -> this.isAtShooterSpeed()),
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber()))
+        ); 
+    }
+    
+    public Command shootCommandAwayHub(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.awayHubShooterSpeed.getNumber())),
+            Commands.waitUntil(() -> this.isAtShooterSpeed()),
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.awayHubShooterSpeed.getNumber()))
+        ); 
     }
 
-    // public Command autoAlignShootCommand(){
-    //     autoAimActive.setDefaultValue(true);
-    //     return Commands.sequence(
-    //         Commands.runOnce(() -> led.setLightsBlink(WHITE, 1)),
-    //         tank.turnCommand(),
-    //         this.shootCommand(),
-    //         Commands.parallel(
-    //             Commands.waitUntil(() -> tank.isAtAngle()),
-    //             Commands.waitUntil(() -> this.isAtShooterSpeed())
-    //         ),
-    //         Commands.runOnce(() -> led.setLights(BLUE)),
-    //         Commands.runOnce(() -> conveyor.feedConveyorForwardCommand())
-    //     );
-    // }
+    public Command feedBackward(){
+        return Commands.runOnce(() -> this.setIndexBackwardSpeed());
+    }
+
     @Override
     public void periodic(){
         shooterMotor1.update();
         shooterMotor2.update();
+        if(indexKp.hasChanged()
+        || indexKi.hasChanged()
+        || indexKp.hasChanged()){
+            indexConfig.closedLoop
+                .p(indexKd.getNumber())
+                .i(indexKi.getNumber())
+                .d(indexKd.getNumber());
+        }
+        SmartDashboard.putNumber("shooter/indexer-current-position", indexMotor.getEncoder().getPosition());
+        SmartDashboard.putNumber("shooter/indexer-current-velocity", indexMotor.getEncoder().getVelocity());
     }
 
     public static Shooter getInstance(){

@@ -16,7 +16,9 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,6 +42,16 @@ public class Tank extends SubsystemBase{
 
     private String[] limelights = {"limelight1", "limelight2", "limelight3"};
     private double[][] limelightStDev = {{0.7, 0.7, 99999}, {0.7, 0.7, 99999}, {0.7, 0.7, 99999}};
+
+    private DifferentialDrivetrainSim m_driveSim = new DifferentialDrivetrainSim( 
+        DCMotor.getNEO(4), //TODO motors
+        7.0, //TODO The gear ratio between the motors and the wheels as output torque over input torque 
+        7.5,  //TODO rotational inertia
+        100.0, //TODO mass
+        Units.inchesToMeters(3), //TODO radius of wheels(meters)
+        Units.inchesToMeters(22),//TODO track width (meters)
+        VecBuilder.fill(0.001, 0.001, 0.001, 0.1, 0.1, 0.005, 0.005) //TODO standard deviations
+    );
 
     private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
     private final Pigeon2 m_gyro = new Pigeon2(0); // TODO
