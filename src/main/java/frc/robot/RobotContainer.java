@@ -8,8 +8,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.subsystems.Conveyor;
 import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.LED;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Tank;
 
@@ -18,10 +18,10 @@ public class RobotContainer {
   private final CommandXboxController driveStick = new CommandXboxController(0);
   private final CommandXboxController mechStick = new CommandXboxController(0);
 
-  private final Conveyor conveyor = Conveyor.getInstance();
   private final Intake intake = Intake.getInstance();
   private final Tank tank = Tank.getInstance();
   private final Shooter shooter = Shooter.getInstance();
+  private final LED led = LED.getInstance();
 
   public RobotContainer() {
     configureBindings();
@@ -36,16 +36,13 @@ public class RobotContainer {
       ));
 
     this.mechStick.rightTrigger() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
-      .whileTrue(intake.startIntakingCommand())
-      .whileFalse(intake.stopIntakingCommand());
+      .whileTrue(intake.deployIntakeCommand())
+      .whileFalse(intake.stowIntakeCommand());
         
     this.mechStick.a() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
-      .whileTrue(intake.startOuttakingCommand())
-      .whileFalse(intake.stopIntakingCommand());
+      .whileTrue(intake.regurgitateIntakeCommand())
+      .whileFalse(intake.stowIntakeCommand());
 
-    this.mechStick.x()  //Runs conveyor backward
-      .whileTrue(conveyor.feedConveyorBackwardCommand())
-      .whileFalse(conveyor.stopConveyorCommand());
 
     tank.setDefaultCommand(
       Commands.run(() -> tank.drive(-driveStick.getLeftY(), driveStick.getRightX()), tank)

@@ -203,15 +203,12 @@ public class Tank extends SubsystemBase{
         return Commands.run(() -> this.turnToLobbingAngle(), this);
     }
 
-    //Turns to hub if in alliance zone turns to lobbing point if not (0-4 m blue zone, 12.6m > red zone)
+    //Turns to hub if in alliance zone turns to lobbing point if not (0-4 m blue zone, 12.6m on red zone)
     //uses defferd command to allow use of odometry at runtime and set.of(this) stops other uses of tank from running
     public Command turnCommand(){
-        return Commands.defer(
-            () ->   
-            {if((this.getRobotPose().getX() <= 4 && this.redAlliance.getValue() == false) || (this.getRobotPose().getX() >= 12.6 && this.redAlliance.getValue() == true))
+        if((this.getRobotPose().getX() <= 4 && this.redAlliance.getValue() == false) || (this.getRobotPose().getX() >= 12.6 && this.redAlliance.getValue() == true))
                 return this.turnToHubCommand();
-            return this.turnToLobCommand();}, 
-            Set.of(this));
+            return this.turnToLobCommand();
     }
 
     @Override

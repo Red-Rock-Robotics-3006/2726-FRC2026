@@ -1,7 +1,7 @@
 {
  "name":"Autos",
  "version":2,
- "type":"Swerve",
+ "type":"Differential",
  "variables":{
   "expressions":{},
   "poses":{}

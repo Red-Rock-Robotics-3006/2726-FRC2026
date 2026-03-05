@@ -1,12 +1,12 @@
 package frc.robot.subsystems;
+
+import com.ctre.phoenix6.controls.NeutralOut;
 import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
-import com.revrobotics.PersistMode;
-import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkBase.ControlType;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -14,136 +14,143 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import redrocklib.logging.SmartDashboardNumber;
 
-
 public class Intake extends SubsystemBase{
-    private static Intake instance = null;
+    public static Intake instance = null;
+    private final SparkMax hingeMotor = new SparkMax(49, MotorType.kBrushless);
+    private final SparkMax rollerMotor = new SparkMax(49, MotorType.kBrushless);
 
-    private final SparkMax intakeMotor = new SparkMax(1, MotorType.kBrushless); //TODO
-    private final SparkMax hingeMotor = new SparkMax(2, MotorType.kBrushless); //TODO
-
-    private final SparkClosedLoopController intake_controller = intakeMotor.getClosedLoopController();
-    private final SparkClosedLoopController hinge_controller = hingeMotor.getClosedLoopController();
- 
-    private SparkMaxConfig intakeConfig = new SparkMaxConfig();
-    private SparkMaxConfig hingeConfig = new SparkMaxConfig();
-
-    private SmartDashboardNumber intakeSpeed = new SmartDashboardNumber("Intake/intakeSpeed", 0.3); //TODO
-    private SmartDashboardNumber outtakeSpeed = new SmartDashboardNumber("Intake/outtakeSpeed", -0.3); //TODO
-    private SmartDashboardNumber stowPosition = new SmartDashboardNumber("Intake/stowPosition", 0); //TODO
-    private SmartDashboardNumber deployPosition = new SmartDashboardNumber("Intake/deployPosition", 0); //TODO
-    private SmartDashboardNumber intakekP = new SmartDashboardNumber("Intake/intakekP", 0); //TODO
-    private SmartDashboardNumber intakekI = new SmartDashboardNumber("Intake/intakekI", 0); //TODO
-    private SmartDashboardNumber intakekD = new SmartDashboardNumber("Intake/intakekD", 0); //TODO
-    private SmartDashboardNumber hingekP = new SmartDashboardNumber("Intake/hingekP", 0); //TODO    
-
+    SparkClosedLoopController hingeMotorController = hingeMotor.getClosedLoopController();
+    SparkClosedLoopController rollerMotorController = rollerMotor.getClosedLoopController();
     
-    private SmartDashboardNumber hingekI = new SmartDashboardNumber("Intake/hingekI", 0); //TODO
-    private SmartDashboardNumber hingekD = new SmartDashboardNumber("Intake/hingekD", 0); //TODO
+    SmartDashboardNumber kPHinge = new SmartDashboardNumber( "Intake/kPHinge",0);
+    SmartDashboardNumber kIHinge = new SmartDashboardNumber( "Intake/kIHinge",0);
+    SmartDashboardNumber kDHinge = new SmartDashboardNumber( "Intake/kDHinge",0);
+    SmartDashboardNumber kMinOutputHinge = new SmartDashboardNumber("Intake/kMinOutputHinge", 0);
+    SmartDashboardNumber kMaxOutputHinge = new SmartDashboardNumber("Intake/kMaxOutputHinge", 0);
+
+    SmartDashboardNumber kPRoller = new SmartDashboardNumber( "Intake/kPRoller",0);
+    SmartDashboardNumber kIRoller = new SmartDashboardNumber( "Intake/kIRoller",0);
+    SmartDashboardNumber kDRoller = new SmartDashboardNumber( "Intake/kDRoller",0);
+    SmartDashboardNumber kMinOutputRoller = new SmartDashboardNumber("Intake/kMinOutputRoller", 0);
+    SmartDashboardNumber kMaxOutputRoller = new SmartDashboardNumber("Intake/kMaxOutputRoller", 0);
     
-    private Intake(){
+    SmartDashboardNumber intakeSpeed = new SmartDashboardNumber("Intake/intakeSpeed",0);
+    SmartDashboardNumber backSpeed = new SmartDashboardNumber("Intake/backSpeed",0);
+    SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", 0);
+    SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
 
-        super("Intake");
+    SparkMaxConfig hingeConfig = new SparkMaxConfig();
+    SparkMaxConfig rollerConfig = new SparkMaxConfig();
+    public Intake(){
+        super();
+        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
+        hingeConfig.closedLoop
+            .p(kPHinge.getNumber())
+            .i(kIHinge.getNumber())
+            .d(kDHinge.getNumber())
+            .outputRange(kMinOutputHinge.getNumber(), kMaxOutputHinge.getNumber());
+
+        rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
+        rollerConfig.closedLoop
+            .p(kPRoller.getNumber())
+            .i(kIRoller.getNumber())
+            .d(kDRoller.getNumber())
+            .outputRange(kMinOutputRoller.getNumber(), kMaxOutputRoller.getNumber());
+    }
+    
+    public void deployIntake(){
+        this.hingeMotorController.setSetpoint(deployPos.getNumber(), ControlType.kPosition);
+    }
+
+    public void stowIntake(){
+        this.hingeMotorController.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
+    }
+
+    public void setIntakeSpeedRPM(double speed){
+        this.rollerMotorController.setSetpoint(speed,ControlType.kVelocity);
+    }
+    public void startIntaking(){
+        this.setIntakeSpeedRPM(intakeSpeed.getNumber());
+    }
+
+    public void regurgitateIntake(){
+        this.setIntakeSpeedRPM(backSpeed.getNumber());
+    }
+
+    public void stopIntakeRoller(){
+        this.setIntakeSpeedRPM(0);
+    }
+
+    public void normalizeIntake(){
+        this.rollerMotor.set(-0.1);
+    }
+// do sumthin abt this idk
+    public void resetIntake(){
+        this.stopIntakeRoller();
+        // this.hingeMotor.
         
-        intakeConfig.idleMode(IdleMode.kBrake);
-        intakeConfig.closedLoop  //TODO
-            .p(intakekP.getNumber())
-            .i(intakekI.getNumber())
-            .d(intakekD.getNumber())
-            .outputRange(-0.8, 0.8);
-
-        intakeMotor.configure(intakeConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        
-        
-        
-        hingeConfig.idleMode(IdleMode.kBrake);
-        hingeConfig.closedLoop  //TODO
-            .p(hingekP.getNumber())
-            .i(hingekI.getNumber())
-            .d(hingekD.getNumber())
-            .outputRange(-0.8, 0.8);
-
-        hingeMotor.configure(hingeConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    }
-
-    public void setOttakeSpeedRPM(){
-        //this.intake_controller.setSetpoint(this.outtakeSpeed.getNumber(), ControlType.kVelocity);
-    }
-
-    public void setIntakeSpeedRPM(){
-        this.intake_controller.setSetpoint(this.intakeSpeed.getNumber(), ControlType.kVelocity);
-    }
-
-    public void stopIntake(){
-        intakeMotor.set(0);
-    }
-
-    public void setIntakeStowPosition(){
-        this.hinge_controller.setSetpoint(this.stowPosition.getNumber(), ControlType.kPosition);
-    }
-
-    public void setIntakeDeployPosition(){
-        this.hinge_controller.setSetpoint(this.deployPosition.getNumber(), ControlType.kPosition);
     }
 
     public boolean isIntaking(){
-        return hingeMotor.getEncoder().getPosition() > 5;
+        return hingeMotor.getEncoder().getPosition() > 5; //TODO
     }
 
-    // public void normalizeIntake(){
-    //     this.hinge_controller.set(-0.1);
-    // }
+    public Command spinRollerCommand(){
+        return Commands.runOnce(() -> this.startIntaking(), this);
+    }
 
-    // public void resetIntake(){
-    //     this.hingeMotor.motor.setControl(new NeutralOut());
-    // }
+    public Command regurgitIntakeCommand(){
+        return Commands.runOnce(() -> this.regurgitateIntake(), this);
+    }
 
-    public Command startIntakingCommand(){
+    public Command stopIntakeRollerCommand(){
+        return Commands.runOnce(() -> this.stopIntakeRoller(), this);
+    }
+
+    public Command deployIntakeCommand(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.setIntakeDeployPosition()),
-            Commands.runOnce(() -> this.setIntakeSpeedRPM())
+            Commands.runOnce(() -> this.deployIntake(), this),
+            this.spinRollerCommand()
         );
     }
 
-    public Command startOuttakingCommand(){
+    public Command regurgitateIntakeCommand(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.setIntakeDeployPosition()),
-            Commands.runOnce(() -> this.setOttakeSpeedRPM())
+            Commands.runOnce(() -> this.deployIntake(), this),
+            this.regurgitIntakeCommand()
         );
     }
 
-    public Command stopIntakingCommand(){
+    public Command stowIntakeCommand(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.setIntakeStowPosition()),
-            Commands.runOnce(() -> this.stopIntake())
+            Commands.runOnce(() -> this.stowIntake(), this),
+            this.stopIntakeRollerCommand()
         );
-    }
-
-    @Override
-    public void periodic(){
-        if(intakekP.hasChanged() 
-        || intakekI.hasChanged()
-        || intakekD.hasChanged()
-        || hingekP.hasChanged()
-        || hingekI.hasChanged()
-        || hingekD.hasChanged()){
-            intakeConfig.closedLoop
-                .p(intakekP.getNumber())
-                .i(intakekI.getNumber())
-                .d(intakekD.getNumber());
-            hingeConfig.closedLoop
-                .p(hingekP.getNumber())
-                .i(hingekI.getNumber())
-                .d(hingekD.getNumber());
-        }
-        SmartDashboard.putNumber("intake/intake-current-position", intakeMotor.getEncoder().getPosition());
-        SmartDashboard.putNumber("intake/intake-current-velocity", intakeMotor.getEncoder().getVelocity());
-        // SmartDashboard.putNumber("intake/intake-current-acceleration", intakeMotor.getEncoder().getAcceleration());
-        // SmartDashboard.putNumber("intake/intake-torque-current",intakeMotor.getEncoder().getTorqueCurrent());
-
     }
 
     public static Intake getInstance(){
-        if(instance == null) instance = new Intake();
-        return instance;
+        if(Intake.instance == null){
+            Intake.instance = new Intake();
+        }
+        return Intake.instance;
     }
+    @Override
+    public void periodic(){
+        if(this.kDHinge.hasChanged()
+        ||this.kPHinge.hasChanged() 
+        ||this.kIHinge.hasChanged() 
+        ||this.kMinOutputHinge.hasChanged() 
+        ||this.kPRoller.hasChanged() 
+        ||this.kIRoller.hasChanged() 
+        ||this.kDRoller.hasChanged() 
+        ||this.kMinOutputRoller.hasChanged() 
+        ||this.kMaxOutputRoller.hasChanged() 
+        ){
+        this.hingeConfig.closedLoop.p(this.kPHinge.getNumber()).i(this.kIHinge.getNumber()).d(this.kDHinge.getNumber()).minOutput(this.kMinOutputHinge.getNumber());
+        this.rollerConfig.closedLoop.p(this.kPRoller.getNumber()).i(this.kIRoller.getNumber()).d(this.kDRoller.getNumber()).minOutput(this.kMinOutputRoller.getNumber()).maxOutput(this.kMaxOutputHinge.getNumber());
+        SmartDashboard.putNumber("intake/intake-current-position", hingeMotor.getEncoder().getPosition());
+        SmartDashboard.putNumber("intake/intake-current-velocity", hingeMotor.getEncoder().getVelocity());
+        }
+    }
+
 }

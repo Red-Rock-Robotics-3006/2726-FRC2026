@@ -1,33 +1,39 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Seconds;
+
+import javax.lang.model.util.ElementScanner14;
+
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
+import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class LED extends SubsystemBase{
+
     private static LED instance = null;
 
-    private AddressableLED control = new AddressableLED(0); //TODO
-    private AddressableLEDBuffer buffer = new AddressableLEDBuffer(0); //TODO
+    private Intake intake = Intake.getInstance();
+    private Shooter shooter = Shooter.getInstance();
+    private Tank tank = Tank.getInstance();
 
-    private final Color INIT_YELLOW = new Color(255, 165, 0); 
-    private final Color BLUE = new Color(0, 0, 255); 
-    private final Color GREEN = new Color(0, 255, 0); 
-    private final Color RED = new Color(255, 0, 0); 
+    private AddressableLED control = new AddressableLED(0);//TODO FILLER
+
+    private AddressableLEDBuffer buffer = new AddressableLEDBuffer(64);//TODO FILLER
+
     private final Color WHITE = new Color(255, 255, 255);
-    private final Color OFF = new Color(0, 0, 0);
-
-    private int blinkCounter = 0;
+    private final Color GREEN = new Color(0, 255, 0);
+    private final Color BLUE = new Color(0, 0, 255);
+    private final Color RED = new Color(255, 0, 0);
+    private final Color ORANGE = new Color(255, 128, 0);
+    private final LEDPattern ORANGE_BLINK = LEDPattern.solid(ORANGE).blink(Seconds.of(0.3));
+    private final LEDPattern WHITE_BLINK = LEDPattern.solid(WHITE).blink(Seconds.of(0.3));
     
     private LED(){
         super("LED");
-        
-        this.control.setLength(buffer.getLength());
-        this.control.setColorOrder(AddressableLED.ColorOrder.kRGB);
-        this.setLights(INIT_YELLOW);
-        this.control.setData(buffer);
-        this.control.start();
+        control.setLength(buffer.getLength());
+        control.setColorOrder(AddressableLED.ColorOrder.kRGB);
     }
 
     public void setLights(Color color){
@@ -36,19 +42,61 @@ public class LED extends SubsystemBase{
         }
     }
 
-    public void setLightsBlink(Color color, int freq){
-        if(blinkCounter % (2 * freq) < freq) this.setLights(color);
-        else this.setLights(OFF);
+    public void setLights(Color col1, Color col2, Color col3){
+        for(int i = 0; i < buffer.getLength()/2; i+=1){
+            if(i % 3 == 0){
+                buffer.setLED(2*i, col1);
+                buffer.setLED(2*i+1, col1);
+            }
+            else if(i % 3 == 1){
+                buffer.setLED(2*i, col2);
+                buffer.setLED(2*i+1, col2);
+            }
+            else{
+                buffer.setLED(2*i, col3);
+                buffer.setLED(2*i+1, col3);
+            };
+        }
+    }
+
+    public void setLEDTankDisable(){
+        ORANGE_BLINK.applyTo(this.buffer);
+    }
+    
+    public void setLEDDisable(){
+        this.setLights(RED);
+    }
+
+    public void setLEDShooting(){
+        this.setLights(BLUE);
+    }
+    
+    public void setLEDAtAngle(){
+        this.setLights(GREEN);
+    }
+
+    public void setLEDIntaking(){
+        this.setLights(WHITE);
+    }
+
+    public void setLEDAutoAiming(){
+        WHITE_BLINK.applyTo(this.buffer);
     }
 
     @Override
     public void periodic(){
-        if(Intake.getInstance().isIntaking()) this.setLights(BLUE);
+        if(this.tank.isAtAngle()) this.setLEDAtAngle();
+        //else if(this.tank.isAutoAiming()) this.setLEDAutoAiming();
+        else if(this.shooter.isAtShooterSpeed()) this.setLEDShooting();
+        else if(this.intake.isIntaking()) this.setLEDIntaking();
+        else this.setLEDDisable();
+
+        this.control.setData(buffer);
     }
 
     public static LED getInstance(){
-        if(instance == null) instance = new LED();
-        return instance;
-
+        if(LED.instance == null) 
+            LED.instance = new LED();
+        return LED.instance;
     }
 }
