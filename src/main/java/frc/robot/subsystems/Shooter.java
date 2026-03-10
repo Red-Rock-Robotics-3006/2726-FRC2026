@@ -152,7 +152,7 @@ public class Shooter extends SubsystemBase{
         shooterMotor2.motor.getVelocity().getValueAsDouble()*60.0)) <= 100; //getVelocity() is in RPS so convert to RPM
     }
 
-    public Command autoAimshootCommand(){
+    public Command autoAimshootCommand(){ //Uses auto aim to shoot
         return Commands.sequence(
             Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.getSpeed(tank.getXDistanceFromHub())), this), //TODO
             Commands.waitUntil(() -> this.isAtShooterSpeed()),
@@ -160,7 +160,7 @@ public class Shooter extends SubsystemBase{
         );
     }
 
-    public Command shootCommandHub(){
+    public Command shootCommandHub(){ //Shoot from specific place on field
         return Commands.sequence(
             Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber())),
             Commands.waitUntil(() -> this.isAtShooterSpeed()),

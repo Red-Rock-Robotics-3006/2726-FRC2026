@@ -145,17 +145,17 @@ public class Tank extends SubsystemBase{
     }
 
     
-    //Returns angle(degrees) to lobbing point (4 separate points uses pos and redAlliance boolean to find correct lobbing point)
+    //Returns angle(degrees) to lobbing point (4 separate points uses pos and redAlliance boolean to find correct lobbing point) (14, 1.9), (2.7, 1.9), ()
     public double getAngleToLobbingPoint(){
         if(this.getRobotPose().getY() < 4.039){
             if(redAlliance.getValue())
                 return Math.atan2(1.9 - this.getRobotPose().getY(), 14 - this.getRobotPose().getX());    
-                return Math.atan2(1.9 - this.getRobotPose().getY(), 2.7 - this.getRobotPose().getX());
-            }
-            if(redAlliance.getValue()){
-                return Math.atan2(6-this.getRobotPose().getY(), 14-this.getRobotPose().getX());
-            }
-            return Math.atan2(6-this.getRobotPose().getY(), this.getRobotPose().getX()-2.7);
+            return Math.atan2(1.9 - this.getRobotPose().getY(), 2.7 - this.getRobotPose().getX());
+        }
+        if(redAlliance.getValue()){
+            return Math.atan2(6-this.getRobotPose().getY(), 14-this.getRobotPose().getX());
+        }
+        return Math.atan2(6-this.getRobotPose().getY(), this.getRobotPose().getX()-2.7);
     }
 
     //Checks if facing target

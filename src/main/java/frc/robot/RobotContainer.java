@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import choreo.auto.AutoFactory;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -23,7 +25,13 @@ public class RobotContainer {
   private final Shooter shooter = Shooter.getInstance();
   private final LED led = LED.getInstance();
 
+  private final AutoFactory autoFactory;
+  private final Autos autos;
+  private SendableChooser <Command> autoChooser = new SendableChooser<>();
+
   public RobotContainer() {
+    autoFactory = tank.createAutoFactory();
+
     configureBindings();
   }
 
@@ -47,6 +55,12 @@ public class RobotContainer {
     tank.setDefaultCommand(
       Commands.run(() -> tank.drive(-driveStick.getLeftY(), driveStick.getRightX()), tank)
     );
+  }
+
+  private void configureSelector(){
+    autoChooser.addOption("rightPile", autos.rightPile());
+    autoChooser.addOption("leftPile", autos.leftPile());
+    autoChooser.addOption("midPile", autos.midPile());
   }
 
   public Command getAutonomousCommand() {
