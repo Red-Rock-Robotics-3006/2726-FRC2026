@@ -4,8 +4,13 @@
 
 package frc.robot;
 
+<<<<<<< HEAD
 import choreo.auto.AutoFactory;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+=======
+import org.littletonrobotics.junction.Logger;
+
+>>>>>>> main
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;

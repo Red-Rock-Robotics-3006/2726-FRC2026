@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import org.ejml.dense.row.decomposition.eig.watched.WatchedDoubleStepQREigen_DDRM;
+import org.littletonrobotics.junction.AutoLogOutputManager;
+import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
@@ -48,7 +50,7 @@ public class Shooter extends SubsystemBase{
 
     private Shooter(){
         super("Shooter");
-                
+        AutoLogOutputManager.addObject(this);
         this.shooterMotor1.withMotorOutputConfigs(
             new MotorOutputConfigs()
             .withInverted(InvertedValue.Clockwise_Positive)
@@ -122,27 +124,36 @@ public class Shooter extends SubsystemBase{
     public void setShooterSpeedRPM(double RPM){
         this.shooterMotor1.setMotionMagicVelocity(RPM);
         this.shooterMotor2.setMotionMagicVelocity(RPM);
+        Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", RPM );
+        Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", RPM );
     }
-
+    
     public void stopShooter(){
         this.shooterMotor1.setMotionMagicVelocity(0);
         this.shooterMotor2.setMotionMagicVelocity(0);
+        Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", 0 );
+        Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", 0 );
     }
 
     public void setIndexSpeed(){
         this.indexController.setSetpoint(this.indexSpeed.getNumber(), ControlType.kVelocity);
+        Logger.recordOutput("Shooter/indexMotorTargetVelocity", this.indexSpeed.getNumber());
     }
     
     public void setIndexBackwardSpeed(){
         this.indexController.setSetpoint(-this.indexSpeed.getNumber(), ControlType.kVelocity);
+        Logger.recordOutput("Shooter/indexMotorTargetVelocity", -this.indexSpeed.getNumber());
+        
     }
-
+    
     public void stopIndexer(){
         this.indexMotor.set(0);
+        Logger.recordOutput("Shooter/indexMotorTargetVelocity", 0);
     }
 
     //Returns speed from bestfit curve
     public double getSpeed(double x){//x distance from hub
+        Logger.recordOutput("Shooter/AutoAimShooterSpeed", Math.sqrt(x));
         return Math.sqrt(x); //TODO change bestfit equation
     }
 

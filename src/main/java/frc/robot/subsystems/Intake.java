@@ -1,5 +1,8 @@
 package frc.robot.subsystems;
 
+import org.littletonrobotics.junction.AutoLogOutputManager;
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
@@ -43,6 +46,7 @@ public class Intake extends SubsystemBase{
     SparkMaxConfig rollerConfig = new SparkMaxConfig();
     public Intake(){
         super();
+        AutoLogOutputManager.addObject(this);
         hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
         hingeConfig.closedLoop
             .p(kPHinge.getNumber())
@@ -60,9 +64,11 @@ public class Intake extends SubsystemBase{
     
     public void deployIntake(){
         this.hingeMotorController.setSetpoint(deployPos.getNumber(), ControlType.kPosition);
+        Logger.recordOutput("Intake/Position", "DEPLOYED");
     }
-
+    
     public void stowIntake(){
+        Logger.recordOutput("Intake/Position", "STOWED");
         this.hingeMotorController.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
     }
 
@@ -71,10 +77,12 @@ public class Intake extends SubsystemBase{
     }
     public void startIntaking(){
         this.setIntakeSpeedRPM(intakeSpeed.getNumber());
+        Logger.recordOutput("Intake/Status", "INTAKING");
     }
 
     public void regurgitateIntake(){
         this.setIntakeSpeedRPM(backSpeed.getNumber());
+        Logger.recordOutput("Intake/Status", "REVERSE INTAKE DIRECTION");
     }
 
     public void stopIntakeRoller(){
@@ -92,6 +100,8 @@ public class Intake extends SubsystemBase{
     }
 
     public boolean isIntaking(){
+        if(hingeMotor.getEncoder().getPosition() > 5) 
+            Logger.recordOutput("Intake/Position", "INTAKING");
         return hingeMotor.getEncoder().getPosition() > 5; //TODO
     }
 

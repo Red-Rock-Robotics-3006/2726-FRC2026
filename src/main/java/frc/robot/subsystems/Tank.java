@@ -2,6 +2,9 @@ package frc.robot.subsystems;
 
 import java.util.Set;
 
+import org.littletonrobotics.junction.AutoLogOutputManager;
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.revrobotics.PersistMode;
@@ -77,6 +80,7 @@ public class Tank extends SubsystemBase{
     private Tank(){
         super("Tank");
 
+        AutoLogOutputManager.addObject(this);
         SparkMaxConfig rightConfig = new SparkMaxConfig();
         SparkMaxConfig leftConfig = new SparkMaxConfig();
 
@@ -91,9 +95,13 @@ public class Tank extends SubsystemBase{
 
     public void driveRaw(double drive, double turn){
         rightFront.set(turn + drive);
+        Logger.recordOutput("Tank/rightFrontVel", turn + drive);
         rightBack.set(turn + drive);
+        Logger.recordOutput("Tank/rightBackVel", turn + drive);
         leftFront.set(drive - turn);
+        Logger.recordOutput("Tank/leftFrontVel", drive - turn);
         leftBack.set(drive - turn);
+        Logger.recordOutput("Tank/leftBackVel", drive - turn);
     }
 
     
@@ -104,24 +112,36 @@ public class Tank extends SubsystemBase{
     //Turns to hub
     public void turnToHubAngle(){
         while(true){
-            if(Math.abs(this.getAngleToHub() - this.getRobotPose().getRotation().getDegrees()) <= 3) //TODO checks if close to hub angle
+            if(Math.abs(this.getAngleToHub() - this.getRobotPose().getRotation().getDegrees()) <= 3) {//TODO checks if close to hub angle
+                Logger.recordOutput("Tank/AtTargetPos", true);
                 break;
-            if(this.getAngleToHub() < 0)
+            }
+            if(this.getAngleToHub() < 0){
+                Logger.recordOutput("Tank/AtTargetPos", false);
                 this.driveRaw(0, -turnSpeed.getNumber());
-            else   
+            }
+            else{
+                Logger.recordOutput("Tank/AtTargetPos", false);
                 this.driveRaw(0, turnSpeed.getNumber());
+            }
             }
         }
         
     //Turns to one of the four lobbing points
     public void turnToLobbingAngle(){
         while(true){
-            if(Math.abs(this.getAngleToLobbingPoint() - this.getRobotPose().getRotation().getDegrees()) <= 3) //TODO checks if close to lobbing angle
+            if(Math.abs(this.getAngleToLobbingPoint() - this.getRobotPose().getRotation().getDegrees()) <= 3){ //TODO checks if close to lobbing angle
+                Logger.recordOutput("Tank/AtTargetPos", true);
                 break;
-            if(this.getAngleToHub() < 0)
+            }
+            if(this.getAngleToHub() < 0){
+                Logger.recordOutput("Tank/AtTargetPos", false);
                 this.driveRaw(0, -turnSpeed.getNumber());
-            else   
+            }
+            else{
+                Logger.recordOutput("Tank/AtTargetPos", false);
                 this.driveRaw(0, turnSpeed.getNumber());
+            }
         }
     }
     
@@ -131,17 +151,22 @@ public class Tank extends SubsystemBase{
     }
 
     public double getXDistanceFromHub(){
+        double res = 0;
         if(!redAlliance.getValue())
-            return Math.abs(this.getRobotPose().getX() - 4.629);
-        return Math.abs(this.getRobotPose().getX() - 11.92);
+            res = Math.abs(this.getRobotPose().getX() - 4.629);
+        res = Math.abs(this.getRobotPose().getX() - 11.92);
+        Logger.recordOutput("Tank/XDistanceFromHub", res);
+        return res;
     }
     
     //returns angle(degrees) that robot needs to be at to face the hub
     public double getAngleToHub(){
+        double res = 0;
         if(redAlliance.getValue()){
-            return Math.atan2(11.92 - this.getRobotPose().getY(), this.getRobotPose().getX() - 4.033);
+            res = Math.atan2(11.92 - this.getRobotPose().getY(), this.getRobotPose().getX() - 4.033);
         }
-        return Math.atan2(4.629 - this.getRobotPose().getY(), 4.039 - this.getRobotPose().getX())*180/Math.PI;
+        res = Math.atan2(4.629 - this.getRobotPose().getY(), 4.039 - this.getRobotPose().getX())*180/Math.PI;
+        return res;
     }
 
     
@@ -188,14 +213,16 @@ public class Tank extends SubsystemBase{
     }
 
     public Command turnToHubCommand(){
+        Logger.recordOutput("Tank/QualRotation", "HUB");
         if(this.isAtAngle()){ 
             this.driveRaw(0, 0);
             return Commands.none();
         }
         return Commands.run(() -> this.turnToHubAngle(), this);
     }
-
+    
     public Command turnToLobCommand(){
+        Logger.recordOutput("Tank/QualRotation", "LOB");
         if(this.isAtAngle()){ 
             this.driveRaw(0, 0);
             return Commands.none();

@@ -4,6 +4,9 @@ import static edu.wpi.first.units.Units.Seconds;
 
 import javax.lang.model.util.ElementScanner14;
 
+import org.littletonrobotics.junction.AutoLogOutputManager;
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.LEDPattern;
@@ -32,6 +35,7 @@ public class LED extends SubsystemBase{
     
     private LED(){
         super("LED");
+        AutoLogOutputManager.addObject(this);
         control.setLength(buffer.getLength());
         control.setColorOrder(AddressableLED.ColorOrder.kRGB);
     }
@@ -61,26 +65,32 @@ public class LED extends SubsystemBase{
 
     public void setLEDTankDisable(){
         ORANGE_BLINK.applyTo(this.buffer);
+        Logger.recordOutput("LED/Status", "ORANGE_BLINK");
     }
     
     public void setLEDDisable(){
         this.setLights(RED);
+        Logger.recordOutput("LED/Status", "RED");
     }
-
+    
     public void setLEDShooting(){
         this.setLights(BLUE);
+        Logger.recordOutput("LED/Status", "BLUE");
     }
     
     public void setLEDAtAngle(){
         this.setLights(GREEN);
+        Logger.recordOutput("LED/Status", "GREEN");
     }
-
+    
     public void setLEDIntaking(){
         this.setLights(WHITE);
+        Logger.recordOutput("LED/Status", "WHITE");
     }
-
+    
     public void setLEDAutoAiming(){
         WHITE_BLINK.applyTo(this.buffer);
+        Logger.recordOutput("LED/Status", "WHITE_BLINK");
     }
 
     @Override
