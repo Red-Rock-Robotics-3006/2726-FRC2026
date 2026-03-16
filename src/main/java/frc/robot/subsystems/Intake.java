@@ -137,13 +137,7 @@ public class Intake extends SubsystemBase{
             this.stopIntakeRollerCommand()
         );
     }
-
-    public static Intake getInstance(){
-        if(Intake.instance == null){
-            Intake.instance = new Intake();
-        }
-        return Intake.instance;
-    }
+    
     @Override
     public void periodic(){
         if(this.kDHinge.hasChanged()
@@ -161,6 +155,13 @@ public class Intake extends SubsystemBase{
         SmartDashboard.putNumber("intake/intake-current-position", hingeMotor.getEncoder().getPosition());
         SmartDashboard.putNumber("intake/intake-current-velocity", hingeMotor.getEncoder().getVelocity());
         }
+    }
+
+    public static Intake getInstance(){
+        if(Intake.instance == null){
+            Intake.instance = new Intake();
+        }
+        return Intake.instance;
     }
 
 }

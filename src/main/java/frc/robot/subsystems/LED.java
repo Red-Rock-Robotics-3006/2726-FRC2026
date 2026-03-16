@@ -96,7 +96,6 @@ public class LED extends SubsystemBase{
     @Override
     public void periodic(){
         if(this.tank.isAtAngle()) this.setLEDAtAngle();
-        //else if(this.tank.isAutoAiming()) this.setLEDAutoAiming();
         else if(this.shooter.isAtShooterSpeed()) this.setLEDShooting();
         else if(this.intake.isIntaking()) this.setLEDIntaking();
         else this.setLEDDisable();

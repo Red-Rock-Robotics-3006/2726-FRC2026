@@ -4,13 +4,9 @@
 
 package frc.robot;
 
-<<<<<<< HEAD
+import choreo.Choreo;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-=======
-import org.littletonrobotics.junction.Logger;
-
->>>>>>> main
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -28,33 +24,37 @@ public class RobotContainer {
   private final Intake intake = Intake.getInstance();
   private final Tank tank = Tank.getInstance();
   private final Shooter shooter = Shooter.getInstance();
-  private final LED led = LED.getInstance();
 
-  private final AutoFactory autoFactory;
-  private final Autos autos;
   private SendableChooser <Command> autoChooser = new SendableChooser<>();
 
   public RobotContainer() {
-    autoFactory = tank.createAutoFactory();
 
     configureBindings();
+    configureSelector();
   }
 
   private void configureBindings() {
     
-    this.mechStick.b()
+    this.mechStick.a()
       .whileTrue(Commands.sequence(
-        tank.turnCommand(),
-        shooter.autoAimshootCommand()
-      ));
+        tank.turnToHubCommand(),
+        shooter.autoAimShootCommand()
+      )
+    );
 
-    this.mechStick.rightTrigger() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
-      .whileTrue(intake.deployIntakeCommand())
-      .whileFalse(intake.stowIntakeCommand());
+    this.mechStick.leftBumper()
+      .onTrue(shooter.shootCommandHub());
+      
+    this.mechStick.leftTrigger(0.25)
+      .onTrue(shooter.shootCommandAwayHub());
+
+    this.mechStick.rightTrigger(0.35) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
+      .onTrue(intake.deployIntakeCommand())
+      .onFalse(intake.stowIntakeCommand());
         
-    this.mechStick.a() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
-      .whileTrue(intake.regurgitateIntakeCommand())
-      .whileFalse(intake.stowIntakeCommand());
+    this.mechStick.b() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
+      .onTrue(intake.regurgitateIntakeCommand())
+      .onFalse(intake.stowIntakeCommand());
 
 
     tank.setDefaultCommand(
@@ -63,12 +63,14 @@ public class RobotContainer {
   }
 
   private void configureSelector(){
-    autoChooser.addOption("rightPile", autos.rightPile());
-    autoChooser.addOption("leftPile", autos.leftPile());
-    autoChooser.addOption("midPile", autos.midPile());
+    autoChooser.setDefaultOption("No auto", Commands.print("No auto"));
+
+    autoChooser.addOption("midPreload", Autos.midPreload());
+    autoChooser.addOption("leftPreload", Autos.leftPreload());
+    autoChooser.addOption("rightPreload", Autos.rightPreload());
   }
 
   public Command getAutonomousCommand() {
-    return Commands.print("No autonomous command configured");
+    return autoChooser.getSelected();
   }
 }
