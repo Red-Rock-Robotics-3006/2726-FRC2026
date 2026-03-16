@@ -12,6 +12,7 @@ import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.vision.LimelightHelpers;
 import redrocklib.logging.SmartDashboardBoolean;
@@ -30,8 +31,6 @@ public class Tank extends SubsystemBase{
     private double[] limelightAngles = {90, 90, 90}; //TODO angle of limelight degrees from vertical
     private int[] hubTags; //TODO go to limelight Point of Intrest tab and set the offsets so Tx is 0 at middle of hub
     
-    private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5); //TODO
-    
     private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.3);
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.3);
     private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/turnSpeed", 0.1); //TODO
@@ -41,6 +40,8 @@ public class Tank extends SubsystemBase{
     private PIDController alignPID = new PIDController(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
 
     private SmartDashboardBoolean onRedAlliance = new SmartDashboardBoolean("Tank/ontRedAlliance", false); //TODO
+    private boolean autoAlignActive = false;
+    private Double hubTagHeight = 44.25;
     
     private Tank(){
         super("Tank");
@@ -77,7 +78,7 @@ public class Tank extends SubsystemBase{
     }
 
     //returns which limelight sees april tag on hub
-    public String getLimelight(){
+    private String getLimelight(){
         for(String limelight: this.limelights){
             if(LimelightHelpers.getTV(limelight))
                 return limelight;
@@ -86,7 +87,7 @@ public class Tank extends SubsystemBase{
     }
 
     //returns index in limelights array that sees april tag
-    public int getLimelightIdx(){
+    private int getLimelightIdx(){
         String limelight = getLimelight();
         return limelight.equals(this.limelights[0])? 0: limelight.equals(this.limelights[1])? 1: 2;
     }
@@ -96,7 +97,7 @@ public class Tank extends SubsystemBase{
     }
 
     //Turns till tx == 0
-    public void turnToHub(){
+    private void turnToHub(){
         String limelight = getLimelight();
         if(!limelight.equals("")){
             drive(0, alignPID.calculate(LimelightHelpers.getTX(limelight), 0));
@@ -113,13 +114,20 @@ public class Tank extends SubsystemBase{
         String limelight = getLimelight();
         int idx = getLimelightIdx();
         if(LimelightHelpers.getTY(limelight) != 0 && !limelight.equals("")){
-            return (44.25- this.limelightHeights[idx])/Math.tan(limelightAngles[idx] + LimelightHelpers.getTY(limelight));
+            return (this.hubTagHeight- this.limelightHeights[idx])/Math.tan(limelightAngles[idx] + LimelightHelpers.getTY(limelight));
         }
         return 0.0;
     }
 
     public Command turnToHubCommand(){
-        return Commands.runOnce(() -> turnToHub());
+        return new FunctionalCommand(
+            () -> autoAlignActive = true, 
+            () -> {
+            },
+            (interrupted) -> autoAlignActive = false,
+            () -> this.isAtAngle(),
+            this
+        );
     }
 
     @Override
@@ -128,6 +136,10 @@ public class Tank extends SubsystemBase{
         || turnKi.hasChanged()
         || turnKp.hasChanged()){
             alignPID.setPID(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
+        }
+
+        if(autoAlignActive){
+            this.turnToHub();
         }
         SmartDashboard.putNumber("tank/right-front-current-position", rightFront.getEncoder().getPosition());
         SmartDashboard.putNumber("tank/right-front-current-velocity", rightFront.getEncoder().getVelocity());

@@ -62,38 +62,38 @@ public class Intake extends SubsystemBase{
             .outputRange(kMinOutputRoller.getNumber(), kMaxOutputRoller.getNumber());
     }
     
-    public void deployIntake(){
+    private void deployIntake(){
         this.hingeMotorController.setSetpoint(deployPos.getNumber(), ControlType.kPosition);
         Logger.recordOutput("Intake/Position", "DEPLOYED");
     }
     
-    public void stowIntake(){
+    private void stowIntake(){
         Logger.recordOutput("Intake/Position", "STOWED");
         this.hingeMotorController.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
     }
 
-    public void setIntakeSpeedRPM(double speed){
+    private void setIntakeSpeedRPM(double speed){
         this.rollerMotorController.setSetpoint(speed,ControlType.kVelocity);
     }
-    public void startIntaking(){
+    private void startIntaking(){
         this.setIntakeSpeedRPM(intakeSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "INTAKING");
     }
 
-    public void regurgitateIntake(){
+    private void regurgitateIntake(){
         this.setIntakeSpeedRPM(backSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "REVERSE INTAKE DIRECTION");
     }
 
-    public void stopIntakeRoller(){
+    private void stopIntakeRoller(){
         this.setIntakeSpeedRPM(0);
     }
 
-    public void normalizeIntake(){
+    private void normalizeIntake(){
         this.rollerMotor.set(-0.1);
     }
 // do sumthin abt this idk
-    public void resetIntake(){
+    private void resetIntake(){
         this.stopIntakeRoller();
         // this.hingeMotor.
         
@@ -137,7 +137,7 @@ public class Intake extends SubsystemBase{
             this.stopIntakeRollerCommand()
         );
     }
-    
+
     @Override
     public void periodic(){
         if(this.kDHinge.hasChanged()

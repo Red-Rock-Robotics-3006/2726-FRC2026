@@ -127,37 +127,37 @@ public class Shooter extends SubsystemBase{
         indexMotor.configure(indexConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
-    public void setShooterSpeedRPM(double RPM){
+    private void setShooterSpeedRPM(double RPM){
         this.shooterMotor1.setMotionMagicVelocity(RPM);
         this.shooterMotor2.setMotionMagicVelocity(RPM);
         Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", RPM );
         Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", RPM );
     }
     
-    public void stopShooter(){
+    private void stopShooter(){
         this.shooterMotor1.setMotionMagicVelocity(0);
         this.shooterMotor2.setMotionMagicVelocity(0);
         Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", 0 );
         Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", 0 );
     }
 
-    public void setIndexSpeed(){
+    private void setIndexSpeed(){
         this.indexController.setSetpoint(this.indexSpeed.getNumber(), ControlType.kVelocity);
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", this.indexSpeed.getNumber());
     }
     
-    public void setIndexBackwardSpeed(){
+    private void setIndexBackwardSpeed(){
         this.indexController.setSetpoint(-this.indexSpeed.getNumber(), ControlType.kVelocity);
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", -this.indexSpeed.getNumber());
         
     }
     
-    public void stopIndexer(){
+    private void stopIndexer(){
         this.indexMotor.set(0);
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", 0);
     }
 
-    public double getShooterSpeed(double[] distance, double[] speeds){
+    private double getShooterSpeed(double[] distance, double[] speeds){
         int idx1 = 0, idx2 = 0;
         if(tank.distanceFromHub() >= distance[distance.length-1]) return speeds[speeds.length-1];
         if(tank.distanceFromHub() <= distance[0]) return speeds[0];
@@ -180,32 +180,28 @@ public class Shooter extends SubsystemBase{
         shooterMotor2.motor.getVelocity().getValueAsDouble()*60.0)) <= 100; //getVelocity() is in RPS so convert to RPM
     }
 
-    // public Command autoAimshootCommand(){ //Uses auto aim to shoot
-    //     return Commands.sequence(
-    //         Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.getShooterSpeed(distFromHubInch, shootSpeedsRPM)), this), //TODO
-    //         Commands.waitUntil(() -> this.isAtShooterSpeed()),
-    //         Commands.runOnce(()-> this.setIndexSpeed())
-    //     );
-    // }
-
     public Command autoAimShootCommand(){ //auto aligns tank and shoots
-        return Commands.sequence( 
-            Commands.parallel(
-                new FunctionalCommand(
-                    () -> {
-                        autoShootActive = true;
-                    }, 
-                    () -> {
-                    }, 
-                    (interrupted) -> {
-                        this.autoShootActive = false;
-                    }, 
-                    () -> this.isAtShooterSpeed(),
-                    this
-                ),
-                tank.turnToHubCommand()
+        return Commands.parallel(
+            new FunctionalCommand(
+                () -> {
+                    autoShootActive = true;
+                }, 
+                () -> {
+                }, 
+                (interrupted) -> {
+                    this.autoShootActive = false;
+                }, 
+                () -> this.isAtShooterSpeed(),
+                this
             ),
-            Commands.runOnce(() -> this.setIndexSpeed())
+            tank.turnToHubCommand()
+        );
+    }
+
+    public Command stopShooterCommand(){
+        return Commands.sequence(
+            runOnce(() -> this.stopShooter()),
+            Commands.runOnce(() -> this.stopIndexer())
         );
     }
 
@@ -244,6 +240,8 @@ public class Shooter extends SubsystemBase{
 
         if(autoShootActive){
             this.setShooterSpeedRPM((int)this.getShooterSpeed(distFromHubInch, shootSpeedsRPM));
+            if(this.isAtShooterSpeed())
+                this.setIndexSpeed();
         }
         SmartDashboard.putNumber("shooter/indexer-current-position", indexMotor.getEncoder().getPosition());
         SmartDashboard.putNumber("shooter/indexer-current-velocity", indexMotor.getEncoder().getVelocity());

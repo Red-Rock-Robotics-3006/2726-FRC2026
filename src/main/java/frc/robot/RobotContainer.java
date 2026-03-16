@@ -35,20 +35,23 @@ public class RobotContainer {
 
   private void configureBindings() {
     
-    this.mechStick.a()
-      .whileTrue(Commands.sequence(
-        tank.turnToHubCommand(),
+    this.mechStick.leftTrigger(0.25)
+      .onTrue(
         shooter.autoAimShootCommand()
       )
+      .onFalse(
+        shooter.stopShooterCommand()
     );
 
     this.mechStick.leftBumper()
-      .onTrue(shooter.shootCommandHub());
+      .onTrue(shooter.shootCommandAwayHub())
+      .onFalse(shooter.stopShooterCommand());
       
-    this.mechStick.leftTrigger(0.25)
-      .onTrue(shooter.shootCommandAwayHub());
+    this.mechStick.a()
+      .onTrue(shooter.shootCommandAwayHub())
+      .onFalse(shooter.stopShooterCommand());
 
-    this.mechStick.rightTrigger(0.35) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
+    this.mechStick.rightTrigger(0.25) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
       .onTrue(intake.deployIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
         
