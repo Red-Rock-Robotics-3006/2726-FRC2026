@@ -14,6 +14,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import redrocklib.logging.SmartDashboardNumber;
 
@@ -44,17 +45,20 @@ public class Intake extends SubsystemBase{
 
     SparkMaxConfig hingeConfig = new SparkMaxConfig();
     SparkMaxConfig rollerConfig = new SparkMaxConfig();
+
+    private double currentThreshold = 50;
+
     public Intake(){
         super();
         AutoLogOutputManager.addObject(this);
-        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
+        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(60);
         hingeConfig.closedLoop
             .p(kPHinge.getNumber())
             .i(kIHinge.getNumber())
             .d(kDHinge.getNumber())
             .outputRange(kMinOutputHinge.getNumber(), kMaxOutputHinge.getNumber());
 
-        rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
+        rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(60);
         rollerConfig.closedLoop
             .p(kPRoller.getNumber())
             .i(kIRoller.getNumber())
@@ -94,9 +98,7 @@ public class Intake extends SubsystemBase{
     }
 // do sumthin abt this idk
     private void resetIntake(){
-        this.stopIntakeRoller();
-        // this.hingeMotor.
-        
+        this.hingeMotor.getEncoder().setPosition(0);
     }
 
     public boolean isIntaking(){
@@ -135,6 +137,18 @@ public class Intake extends SubsystemBase{
         return Commands.sequence(
             Commands.runOnce(() -> this.stowIntake(), this),
             this.stopIntakeRollerCommand()
+        );
+    }
+
+    public Command resetIntakeCommand(){
+        return new FunctionalCommand(
+            () -> this.normalizeIntake(),
+            () -> {},
+            (interrupted) -> this.resetIntake(),
+            () -> {
+                return this.hingeMotor.getOutputCurrent() > currentThreshold;
+            }, 
+            this
         );
     }
 

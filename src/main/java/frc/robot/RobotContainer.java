@@ -24,6 +24,7 @@ public class RobotContainer {
   private final Intake intake = Intake.getInstance();
   private final Tank tank = Tank.getInstance();
   private final Shooter shooter = Shooter.getInstance();
+  private final LED led = LED.getInstance();
 
   private SendableChooser <Command> autoChooser = new SendableChooser<>();
 
