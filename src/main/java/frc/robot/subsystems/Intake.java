@@ -14,6 +14,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import redrocklib.logging.SmartDashboardNumber;
 
@@ -44,17 +45,20 @@ public class Intake extends SubsystemBase{
 
     SparkMaxConfig hingeConfig = new SparkMaxConfig();
     SparkMaxConfig rollerConfig = new SparkMaxConfig();
+
+    private double currentThreshold = 50;
+
     public Intake(){
         super();
         AutoLogOutputManager.addObject(this);
-        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
+        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(60);
         hingeConfig.closedLoop
             .p(kPHinge.getNumber())
             .i(kIHinge.getNumber())
             .d(kDHinge.getNumber())
             .outputRange(kMinOutputHinge.getNumber(), kMaxOutputHinge.getNumber());
 
-        rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(50);
+        rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(60);
         rollerConfig.closedLoop
             .p(kPRoller.getNumber())
             .i(kIRoller.getNumber())
@@ -62,41 +66,39 @@ public class Intake extends SubsystemBase{
             .outputRange(kMinOutputRoller.getNumber(), kMaxOutputRoller.getNumber());
     }
     
-    public void deployIntake(){
+    private void deployIntake(){
         this.hingeMotorController.setSetpoint(deployPos.getNumber(), ControlType.kPosition);
         Logger.recordOutput("Intake/Position", "DEPLOYED");
     }
     
-    public void stowIntake(){
+    private void stowIntake(){
         Logger.recordOutput("Intake/Position", "STOWED");
         this.hingeMotorController.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
     }
 
-    public void setIntakeSpeedRPM(double speed){
+    private void setIntakeSpeedRPM(double speed){
         this.rollerMotorController.setSetpoint(speed,ControlType.kVelocity);
     }
-    public void startIntaking(){
+    private void startIntaking(){
         this.setIntakeSpeedRPM(intakeSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "INTAKING");
     }
 
-    public void regurgitateIntake(){
+    private void regurgitateIntake(){
         this.setIntakeSpeedRPM(backSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "REVERSE INTAKE DIRECTION");
     }
 
-    public void stopIntakeRoller(){
+    private void stopIntakeRoller(){
         this.setIntakeSpeedRPM(0);
     }
 
-    public void normalizeIntake(){
+    private void normalizeIntake(){
         this.rollerMotor.set(-0.1);
     }
 // do sumthin abt this idk
-    public void resetIntake(){
-        this.stopIntakeRoller();
-        // this.hingeMotor.
-        
+    private void resetIntake(){
+        this.hingeMotor.getEncoder().setPosition(0);
     }
 
     public boolean isIntaking(){
@@ -138,12 +140,18 @@ public class Intake extends SubsystemBase{
         );
     }
 
-    public static Intake getInstance(){
-        if(Intake.instance == null){
-            Intake.instance = new Intake();
-        }
-        return Intake.instance;
+    public Command resetIntakeCommand(){
+        return new FunctionalCommand(
+            () -> this.normalizeIntake(),
+            () -> {},
+            (interrupted) -> this.resetIntake(),
+            () -> {
+                return this.hingeMotor.getOutputCurrent() > currentThreshold;
+            }, 
+            this
+        );
     }
+
     @Override
     public void periodic(){
         if(this.kDHinge.hasChanged()
@@ -161,6 +169,13 @@ public class Intake extends SubsystemBase{
         SmartDashboard.putNumber("intake/intake-current-position", hingeMotor.getEncoder().getPosition());
         SmartDashboard.putNumber("intake/intake-current-velocity", hingeMotor.getEncoder().getVelocity());
         }
+    }
+
+    public static Intake getInstance(){
+        if(Intake.instance == null){
+            Intake.instance = new Intake();
+        }
+        return Intake.instance;
     }
 
 }

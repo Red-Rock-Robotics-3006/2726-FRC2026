@@ -1,39 +1,33 @@
 package frc.robot.subsystems;
 
-import java.util.Set;
-
 import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.Logger;
 
-import com.ctre.phoenix6.Utils;
-import com.ctre.phoenix6.hardware.Pigeon2;
 import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
-import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
+import choreo.auto.AutoFactory;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.DeferredCommand;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.vision.LimelightHelpers;
 import redrocklib.logging.SmartDashboardBoolean;
 import redrocklib.logging.SmartDashboardNumber;
-
-import com.ctre.phoenix6.hardware.Pigeon2;
-import edu.wpi.first.math.geometry.Rotation2d;
 
 public class Tank extends SubsystemBase{
     private static Tank instance = null;
@@ -44,43 +38,46 @@ public class Tank extends SubsystemBase{
     private SparkMax leftBack = new SparkMax(9, MotorType.kBrushless);
 
     private String[] limelights = {"limelight1", "limelight2", "limelight3"};
-    private double[][] limelightStDev = {{0.7, 0.7, 99999}, {0.7, 0.7, 99999}, {0.7, 0.7, 99999}};
-
-    private DifferentialDrivetrainSim m_driveSim = new DifferentialDrivetrainSim( 
-        DCMotor.getNEO(4), //TODO motors
-        7.0, //TODO The gear ratio between the motors and the wheels as output torque over input torque 
-        7.5,  //TODO rotational inertia
-        100.0, //TODO mass
-        Units.inchesToMeters(3), //TODO radius of wheels(meters)
-        Units.inchesToMeters(22),//TODO track width (meters)
-        VecBuilder.fill(0.001, 0.001, 0.001, 0.1, 0.1, 0.005, 0.005) //TODO standard deviations
-    );
-
-    private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
-    private final Pigeon2 m_gyro = new Pigeon2(0); // TODO
-    private RelativeEncoder m_rightEncoder = rightFront.getEncoder();
-    private RelativeEncoder m_leftEncoder = leftFront.getEncoder();
-    private final DifferentialDrivePoseEstimator m_poseEstimator = new DifferentialDrivePoseEstimator(
-        m_kinematics, 
-        m_gyro.getRotation2d(), 
-        rightFront.getEncoder().getPosition(), 
-        leftFront.getEncoder().getPosition(), 
-        new Pose2d()
-    );
-    private Field2d fieldPose = new Field2d();
-
+    private double[] limelightHeights = {0, 0, 0}; //TODO vertical height off ground inch
+    private double[] limelightAngles = {90, 90, 90}; //TODO angle of limelight degrees from vertical
+    private int[] hubTags; //TODO go to limelight Point of Intrest tab and set the offsets so Tx is 0 at middle of hub
+    
     private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.3);
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.3);
-    private SmartDashboardNumber turnSpeed = new SmartDashboardNumber("Tank/turnSpeed", 0.1);
+    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/turnSpeed", 0.1); //TODO
+    private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/turnSpeed", 0); //TODO
+    private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/turnSpeed", 0); //TODO
+    
+    private PIDController alignPID = new PIDController(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
+    private double alignPIDTolerence = 5.0;
+    private DriverStation.Alliance alliance = Alliance.Blue;
+    
+    private double[][] limelightStDev = {{0.7, 0.7, 99999}, {0.7, 0.7, 99999}, {0.7, 0.7, 99999}};
+    private double[] encoderStDev = {0.5, 0.5, 0.7};
+    private double[] visionStDev = {0.2, 0.2, 0.5};
+    private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
+    private double trackWidth = 22.0;
+    private boolean doRejectUpdate = false;
+    private final Field2d field = new Field2d();
+    private DifferentialDrivePoseEstimator m_poseEstimator = new DifferentialDrivePoseEstimator(
+        m_kinematics, 
+        new Rotation2d(), 
+        0.0, 
+        0.0, 
+        new Pose2d(), 
+        VecBuilder.fill(encoderStDev[0], encoderStDev[1], encoderStDev[2]),
+        VecBuilder.fill(visionStDev[0], visionStDev[1], visionStDev[2])
+    );
 
-    private SmartDashboardBoolean redAlliance = new SmartDashboardBoolean("Tank/redAlliance", false); //TODO
-    private SmartDashboardBoolean autoAimActive = new SmartDashboardBoolean("Tank/autoAimActive", false); //TODO
-
-
+    private SmartDashboardBoolean onRedAlliance = new SmartDashboardBoolean("Tank/ontRedAlliance", false); //TODO
+    private boolean autoAlignActive = false;
+    private Double hubTagHeight = 44.25;
+    
     private Tank(){
         super("Tank");
-
         AutoLogOutputManager.addObject(this);
+        alignPID.setTolerance(alignPIDTolerence); //5 degrees
+
         SparkMaxConfig rightConfig = new SparkMaxConfig();
         SparkMaxConfig leftConfig = new SparkMaxConfig();
 
@@ -91,156 +88,149 @@ public class Tank extends SubsystemBase{
         rightBack.configure(rightConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftFront.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftBack.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+        SmartDashboard.putData("Tank/field-pos", field);
     }
 
     public void driveRaw(double drive, double turn){
         rightFront.set(turn + drive);
-        Logger.recordOutput("Tank/rightFrontVel", turn + drive);
         rightBack.set(turn + drive);
-        Logger.recordOutput("Tank/rightBackVel", turn + drive);
+        Logger.recordOutput("Tank/Right", turn + drive);
         leftFront.set(drive - turn);
-        Logger.recordOutput("Tank/leftFrontVel", drive - turn);
         leftBack.set(drive - turn);
-        Logger.recordOutput("Tank/leftBackVel", drive - turn);
+        Logger.recordOutput("Tank/Left", -turn + drive);
     }
 
     
     public void drive(double drive, double turn){
         this.driveRaw(drive * maxDrive.getNumber(), turn * maxTurn.getNumber());
     }
-    
-    //Turns to hub
-    public void turnToHubAngle(){
-        while(true){
-            if(Math.abs(this.getAngleToHub() - this.getRobotPose().getRotation().getDegrees()) <= 3) {//TODO checks if close to hub angle
-                Logger.recordOutput("Tank/AtTargetPos", true);
-                break;
-            }
-            if(this.getAngleToHub() < 0){
-                Logger.recordOutput("Tank/AtTargetPos", false);
-                this.driveRaw(0, -turnSpeed.getNumber());
-            }
-            else{
-                Logger.recordOutput("Tank/AtTargetPos", false);
-                this.driveRaw(0, turnSpeed.getNumber());
-            }
+
+    //returns which limelight sees april tag on hub
+    private int getLimelight(){
+        for(int i = 0; i < this.limelights.length; i++){
+            if(LimelightHelpers.getTV(limelights[i])){
+                Logger.recordOutput("Tank/Limelights", limelights[i]);
+                return i;
             }
         }
-        
-    //Turns to one of the four lobbing points
-    public void turnToLobbingAngle(){
-        while(true){
-            if(Math.abs(this.getAngleToLobbingPoint() - this.getRobotPose().getRotation().getDegrees()) <= 3){ //TODO checks if close to lobbing angle
-                Logger.recordOutput("Tank/AtTargetPos", true);
-                break;
-            }
-            if(this.getAngleToHub() < 0){
-                Logger.recordOutput("Tank/AtTargetPos", false);
-                this.driveRaw(0, -turnSpeed.getNumber());
-            }
-            else{
-                Logger.recordOutput("Tank/AtTargetPos", false);
-                this.driveRaw(0, turnSpeed.getNumber());
-            }
-        }
-    }
-    
-    //returns estimated pose in Pose2d which has (x in meters, y in meters, rotation)  
-    public Pose2d getRobotPose(){
-        return m_poseEstimator.getEstimatedPosition();
+        return -1;
     }
 
-    public double getXDistanceFromHub(){
-        double res = 0;
-        if(!redAlliance.getValue())
-            res = Math.abs(this.getRobotPose().getX() - 4.629);
-        res = Math.abs(this.getRobotPose().getX() - 11.92);
-        Logger.recordOutput("Tank/XDistanceFromHub", res);
-        return res;
-    }
-    
-    //returns angle(degrees) that robot needs to be at to face the hub
-    public double getAngleToHub(){
-        double res = 0;
-        if(redAlliance.getValue()){
-            res = Math.atan2(11.92 - this.getRobotPose().getY(), this.getRobotPose().getX() - 4.033);
-        }
-        res = Math.atan2(4.629 - this.getRobotPose().getY(), 4.039 - this.getRobotPose().getX())*180/Math.PI;
-        return res;
+    private void setAllianceColor(DriverStation.Alliance alliance) {
+        this.alliance = alliance;
     }
 
-    
-    //Returns angle(degrees) to lobbing point (4 separate points uses pos and redAlliance boolean to find correct lobbing point) (14, 1.9), (2.7, 1.9), ()
-    public double getAngleToLobbingPoint(){
-        if(this.getRobotPose().getY() < 4.039){
-            if(redAlliance.getValue())
-                return Math.atan2(1.9 - this.getRobotPose().getY(), 14 - this.getRobotPose().getX());    
-            return Math.atan2(1.9 - this.getRobotPose().getY(), 2.7 - this.getRobotPose().getX());
-        }
-        if(redAlliance.getValue()){
-            return Math.atan2(6-this.getRobotPose().getY(), 14-this.getRobotPose().getX());
-        }
-        return Math.atan2(6-this.getRobotPose().getY(), this.getRobotPose().getX()-2.7);
+    public boolean seesTag(){
+        Logger.recordOutput("Tank/CanSeeLimeLights", getLimelight() > -1);
+        return getLimelight() > -1;
     }
 
-    //Checks if facing target
+    //Turns till tx == 0
+    private void turnToHub(){
+        String limelight = this.limelights[getLimelight()];
+        if(!limelight.equals("")){
+            drive(0, alignPID.calculate(LimelightHelpers.getTX(limelight), 0));
+            Logger.recordOutput("Tank/Status", "TURNING_TO_HUB");
+        }
+    }
+
+
     public boolean isAtAngle(){
-        return Math.abs(this.getAngleToHub()) <= 3 || Math.abs(this.getAngleToLobbingPoint()) <= 3; 
+        Logger.recordOutput("Tank/AtTargetAngle", Math.abs(LimelightHelpers.getTX(this.limelights[getLimelight()])) < 5);
+        return Math.abs(LimelightHelpers.getTX(this.limelights[getLimelight()])) < 5; //TODO angle may be to small
     }
-        
-    //updates poseEstimator, then checks if april tag is present, if so it updates poseEstimator with vision data
-    public void updateOdometry(){
-            m_poseEstimator.update(
-            m_gyro.getRotation2d(),
-            rightFront.getEncoder().getPosition(),
-            leftFront.getEncoder().getPosition()
-        );
 
-        for(int i = 0;  i < limelights.length; i++){
-            LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelights[i]);
-            LimelightHelpers.SetRobotOrientation(limelights[i], m_gyro.getRotation2d().getDegrees(), m_gyro.getAngularVelocityZWorld().getValueAsDouble(), 0, 0, 0, 0);
-            if(Math.abs(m_gyro.getAngularVelocityZWorld().getValueAsDouble()) <= 360 && mt2.tagCount != 0){
-                m_poseEstimator.addVisionMeasurement(mt2.pose, Utils.getCurrentTimeSeconds() - mt2.latency/1000, VecBuilder.fill(limelightStDev[i][0], limelightStDev[i][1], limelightStDev[i][2]));
-                SmartDashboard.putBoolean("Limelight/" + limelights[i] + "/isAccepted", true);
-            }
-            else{
-                SmartDashboard.putBoolean("Limelight/" + limelights[i] + "isAccepted", false);
-            }
-            SmartDashboard.putBoolean("Limelight/" + limelights[i]+ "/seesAprilTag", mt2.tagCount > 0);
+    //Uses the formula distance = (aprilTag height - mounted heigh)/ tan(mounting angle of limelight + angle to april tag)
+    public double distanceFromHub(){
+        String limelight = this.limelights[getLimelight()];
+        int idx = getLimelight();
+        double res = 0;
+        if(LimelightHelpers.getTY(limelight) != 0 && !limelight.equals("")){
+            res = (this.hubTagHeight- this.limelightHeights[idx])/Math.tan(limelightAngles[idx] + LimelightHelpers.getTY(limelight));
         }
-        fieldPose.setRobotPose(m_poseEstimator.getEstimatedPosition());
-        SmartDashboard.putData("Limelight/Pose", fieldPose);
+        Logger.recordOutput("Tank/DistFromHub(not constant)", res);
+        return res;
     }
 
     public Command turnToHubCommand(){
-        Logger.recordOutput("Tank/QualRotation", "HUB");
-        if(this.isAtAngle()){ 
-            this.driveRaw(0, 0);
-            return Commands.none();
-        }
-        return Commands.run(() -> this.turnToHubAngle(), this);
-    }
-    
-    public Command turnToLobCommand(){
-        Logger.recordOutput("Tank/QualRotation", "LOB");
-        if(this.isAtAngle()){ 
-            this.driveRaw(0, 0);
-            return Commands.none();
-        }
-        return Commands.run(() -> this.turnToLobbingAngle(), this);
+        return new FunctionalCommand(
+            () -> autoAlignActive = true, 
+            () -> {
+            },
+            (interrupted) -> autoAlignActive = false,
+            () -> this.isAtAngle(),
+            this
+        );
     }
 
-    //Turns to hub if in alliance zone turns to lobbing point if not (0-4 m blue zone, 12.6m on red zone)
-    //uses defferd command to allow use of odometry at runtime and set.of(this) stops other uses of tank from running
-    public Command turnCommand(){
-        if((this.getRobotPose().getX() <= 4 && this.redAlliance.getValue() == false) || (this.getRobotPose().getX() >= 12.6 && this.redAlliance.getValue() == true))
-                return this.turnToHubCommand();
-            return this.turnToLobCommand();
+    //updates poseEstimator, then checks if april tag is present, if so it updates poseEstimator with vision data
+    public void updateOdometry(){
+        double rightMeters = rightFront.getEncoder().getPosition();
+        double leftMeters = leftFront.getEncoder().getPosition();
+        
+        m_poseEstimator.update(
+            new Rotation2d((rightMeters-leftMeters)/trackWidth), 
+            leftMeters,
+            rightMeters
+        );
+
+        for(int i = 0;  i < limelights.length; i++){
+            LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelights[i]);
+            if(mt1.tagCount == 1 && mt1.rawFiducials.length == 1){
+                if(mt1.rawFiducials[0].ambiguity > 0.7 || mt1.rawFiducials[0].distToCamera > 4) doRejectUpdate = true; 
+            }
+            if(mt1.tagCount == 0) doRejectUpdate = true;
+            if(!doRejectUpdate){
+                m_poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(limelightStDev[i][0], limelightStDev[i][1], limelightStDev[i][2]));
+                m_poseEstimator.addVisionMeasurement(mt1.pose, mt1.timestampSeconds);
+            }
+            SmartDashboard.putBoolean("Limelight/" + limelights[i]+ "/seesAprilTag", mt1.tagCount > 0);
+            Logger.recordOutput("Limelight/" + limelights[i]+ "/seesAprilTag", mt1.tagCount > 0);
+            Logger.recordOutput("Limelight/" + limelights[i] + "/isAccepted", !doRejectUpdate);
+            SmartDashboard.putBoolean("Limelight/" + limelights[i] + "/isAccepted", !doRejectUpdate);
+        }
     }
 
     @Override
     public void periodic(){
-        instance.updateOdometry();
+        updateOdometry();
+        field.setRobotPose(m_poseEstimator.getEstimatedPosition());
+
+        if(turnKp.hasChanged()
+        || turnKi.hasChanged()
+        || turnKp.hasChanged()){
+            alignPID.setPID(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
+        }
+
+        if(autoAlignActive){
+            this.turnToHub();
+        }
+
+        if(DriverStation.isDisabled()){
+            DriverStation.getAlliance().ifPresent(
+                allianceColor -> {
+                    this.setAllianceColor(allianceColor);
+                    if(allianceColor == Alliance.Blue){
+                        this.hubTags = onRedAlliance.getValue()? new int[]{5, 8, 9, 10, 11, 2}:  new int[]{18, 27, 26, 25, 24};
+                        for(String limelight: limelights)
+                            LimelightHelpers.SetFiducialIDFiltersOverride(limelight, hubTags);
+                    }
+                }
+            );
+        }
+
+        SmartDashboard.putNumber("tank/right-front-current-position", rightFront.getEncoder().getPosition());
+        SmartDashboard.putNumber("tank/right-front-current-velocity", rightFront.getEncoder().getVelocity());
+        SmartDashboard.putNumber("tank/left-front-current-position", leftFront.getEncoder().getPosition());
+        SmartDashboard.putNumber("tank/left-front-current-velocity", leftFront.getEncoder().getVelocity());
+        SmartDashboard.putBoolean("tank/sees-hub-tag", seesTag());
+        SmartDashboard.putNumberArray("tank/limelight-angles-from-vertical", this.limelightAngles);
+        SmartDashboard.putNumberArray("tank/limelight-height-from-ground", this.limelightHeights);
+        SmartDashboard.putStringArray("tank/limelights", this.limelights);
+        for(double[] arr: limelightStDev){
+            SmartDashboard.putNumberArray("tank/limelight-stDev", arr);
+        }
     }
 
     public static Tank getInstance(){
