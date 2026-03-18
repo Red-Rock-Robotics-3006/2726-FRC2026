@@ -1,5 +1,8 @@
 package frc.robot.subsystems;
 
+import org.littletonrobotics.junction.AutoLogOutputManager;
+import org.littletonrobotics.junction.Logger;
+
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -7,6 +10,7 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import choreo.auto.AutoFactory;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
@@ -71,7 +75,7 @@ public class Tank extends SubsystemBase{
     
     private Tank(){
         super("Tank");
-        
+        AutoLogOutputManager.addObject(this);
         alignPID.setTolerance(alignPIDTolerence); //5 degrees
 
         SparkMaxConfig rightConfig = new SparkMaxConfig();
@@ -91,8 +95,10 @@ public class Tank extends SubsystemBase{
     public void driveRaw(double drive, double turn){
         rightFront.set(turn + drive);
         rightBack.set(turn + drive);
+        Logger.recordOutput("Tank/Right", turn + drive);
         leftFront.set(drive - turn);
         leftBack.set(drive - turn);
+        Logger.recordOutput("Tank/Left", -turn + drive);
     }
 
     
@@ -103,8 +109,10 @@ public class Tank extends SubsystemBase{
     //returns which limelight sees april tag on hub
     private int getLimelight(){
         for(int i = 0; i < this.limelights.length; i++){
-            if(LimelightHelpers.getTV(limelights[i]))
+            if(LimelightHelpers.getTV(limelights[i])){
+                Logger.recordOutput("Tank/Limelights", limelights[i]);
                 return i;
+            }
         }
         return -1;
     }
@@ -114,6 +122,7 @@ public class Tank extends SubsystemBase{
     }
 
     public boolean seesTag(){
+        Logger.recordOutput("Tank/CanSeeLimeLights", getLimelight() > -1);
         return getLimelight() > -1;
     }
 
@@ -122,11 +131,13 @@ public class Tank extends SubsystemBase{
         String limelight = this.limelights[getLimelight()];
         if(!limelight.equals("")){
             drive(0, alignPID.calculate(LimelightHelpers.getTX(limelight), 0));
+            Logger.recordOutput("Tank/Status", "TURNING_TO_HUB");
         }
     }
 
 
     public boolean isAtAngle(){
+        Logger.recordOutput("Tank/AtTargetAngle", Math.abs(LimelightHelpers.getTX(this.limelights[getLimelight()])) < 5);
         return Math.abs(LimelightHelpers.getTX(this.limelights[getLimelight()])) < 5; //TODO angle may be to small
     }
 
@@ -134,10 +145,12 @@ public class Tank extends SubsystemBase{
     public double distanceFromHub(){
         String limelight = this.limelights[getLimelight()];
         int idx = getLimelight();
+        double res = 0;
         if(LimelightHelpers.getTY(limelight) != 0 && !limelight.equals("")){
-            return (this.hubTagHeight- this.limelightHeights[idx])/Math.tan(limelightAngles[idx] + LimelightHelpers.getTY(limelight));
+            res = (this.hubTagHeight- this.limelightHeights[idx])/Math.tan(limelightAngles[idx] + LimelightHelpers.getTY(limelight));
         }
-        return 0.0;
+        Logger.recordOutput("Tank/DistFromHub(not constant)", res);
+        return res;
     }
 
     public Command turnToHubCommand(){
@@ -173,6 +186,8 @@ public class Tank extends SubsystemBase{
                 m_poseEstimator.addVisionMeasurement(mt1.pose, mt1.timestampSeconds);
             }
             SmartDashboard.putBoolean("Limelight/" + limelights[i]+ "/seesAprilTag", mt1.tagCount > 0);
+            Logger.recordOutput("Limelight/" + limelights[i]+ "/seesAprilTag", mt1.tagCount > 0);
+            Logger.recordOutput("Limelight/" + limelights[i] + "/isAccepted", !doRejectUpdate);
             SmartDashboard.putBoolean("Limelight/" + limelights[i] + "/isAccepted", !doRejectUpdate);
         }
     }
@@ -213,6 +228,9 @@ public class Tank extends SubsystemBase{
         SmartDashboard.putNumberArray("tank/limelight-angles-from-vertical", this.limelightAngles);
         SmartDashboard.putNumberArray("tank/limelight-height-from-ground", this.limelightHeights);
         SmartDashboard.putStringArray("tank/limelights", this.limelights);
+        for(double[] arr: limelightStDev){
+            SmartDashboard.putNumberArray("tank/limelight-stDev", arr);
+        }
     }
 
     public static Tank getInstance(){
