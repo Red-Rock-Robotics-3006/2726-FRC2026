@@ -60,6 +60,8 @@ public class RobotContainer {
       .onTrue(intake.regurgitateIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
 
+    this.mechStick.x() //Stows intake then zero it there
+      .onTrue(intake.resetIntakeCommand());
 
     tank.setDefaultCommand(
       Commands.run(() -> tank.drive(-driveStick.getLeftY(), driveStick.getRightX()), tank)

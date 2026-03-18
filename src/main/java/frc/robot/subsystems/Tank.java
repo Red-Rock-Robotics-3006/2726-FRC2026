@@ -7,9 +7,16 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
@@ -38,7 +45,25 @@ public class Tank extends SubsystemBase{
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/turnSpeed", 0); //TODO
     
     private PIDController alignPID = new PIDController(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
+    private double alignPIDTolerence = 5.0;
     private DriverStation.Alliance alliance = Alliance.Blue;
+    
+    private double[][] limelightStDev = {{0.7, 0.7, 99999}, {0.7, 0.7, 99999}, {0.7, 0.7, 99999}};
+    private double[] encoderStDev = {0.5, 0.5, 0.7};
+    private double[] visionStDev = {0.2, 0.2, 0.5};
+    private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
+    private double trackWidth = 22.0;
+    private boolean doRejectUpdate = false;
+    private final Field2d field = new Field2d();
+    private DifferentialDrivePoseEstimator m_poseEstimator = new DifferentialDrivePoseEstimator(
+        m_kinematics, 
+        new Rotation2d(), 
+        0.0, 
+        0.0, 
+        new Pose2d(), 
+        VecBuilder.fill(encoderStDev[0], encoderStDev[1], encoderStDev[2]),
+        VecBuilder.fill(visionStDev[0], visionStDev[1], visionStDev[2])
+    );
 
     private SmartDashboardBoolean onRedAlliance = new SmartDashboardBoolean("Tank/ontRedAlliance", false); //TODO
     private boolean autoAlignActive = false;
@@ -47,7 +72,7 @@ public class Tank extends SubsystemBase{
     private Tank(){
         super("Tank");
         
-        alignPID.setTolerance(5.0); //5 degrees
+        alignPID.setTolerance(alignPIDTolerence); //5 degrees
 
         SparkMaxConfig rightConfig = new SparkMaxConfig();
         SparkMaxConfig leftConfig = new SparkMaxConfig();
@@ -59,6 +84,8 @@ public class Tank extends SubsystemBase{
         rightBack.configure(rightConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftFront.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftBack.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+        SmartDashboard.putData("Tank/field-pos", field);
     }
 
     public void driveRaw(double drive, double turn){
@@ -124,8 +151,37 @@ public class Tank extends SubsystemBase{
         );
     }
 
+    //updates poseEstimator, then checks if april tag is present, if so it updates poseEstimator with vision data
+    public void updateOdometry(){
+        double rightMeters = rightFront.getEncoder().getPosition();
+        double leftMeters = leftFront.getEncoder().getPosition();
+        
+        m_poseEstimator.update(
+            new Rotation2d((rightMeters-leftMeters)/trackWidth), 
+            leftMeters,
+            rightMeters
+        );
+
+        for(int i = 0;  i < limelights.length; i++){
+            LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelights[i]);
+            if(mt1.tagCount == 1 && mt1.rawFiducials.length == 1){
+                if(mt1.rawFiducials[0].ambiguity > 0.7 || mt1.rawFiducials[0].distToCamera > 4) doRejectUpdate = true; 
+            }
+            if(mt1.tagCount == 0) doRejectUpdate = true;
+            if(!doRejectUpdate){
+                m_poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(limelightStDev[i][0], limelightStDev[i][1], limelightStDev[i][2]));
+                m_poseEstimator.addVisionMeasurement(mt1.pose, mt1.timestampSeconds);
+            }
+            SmartDashboard.putBoolean("Limelight/" + limelights[i]+ "/seesAprilTag", mt1.tagCount > 0);
+            SmartDashboard.putBoolean("Limelight/" + limelights[i] + "/isAccepted", !doRejectUpdate);
+        }
+    }
+
     @Override
     public void periodic(){
+        updateOdometry();
+        field.setRobotPose(m_poseEstimator.getEstimatedPosition());
+
         if(turnKp.hasChanged()
         || turnKi.hasChanged()
         || turnKp.hasChanged()){
