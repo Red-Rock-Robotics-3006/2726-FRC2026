@@ -19,7 +19,7 @@ import frc.robot.subsystems.Tank;
 public class RobotContainer {
 
   private final CommandXboxController driveStick = new CommandXboxController(0);
-  private final CommandXboxController mechStick = new CommandXboxController(0);
+  // private final CommandXboxController mechStick = new CommandXboxController(1);
 
   private final Intake intake = Intake.getInstance();
   private final Tank tank = Tank.getInstance();
@@ -36,7 +36,7 @@ public class RobotContainer {
 
   private void configureBindings() {
     
-    this.mechStick.leftTrigger(0.25)
+    this.driveStick.leftTrigger(0.25)
       .onTrue(
         shooter.autoAimShootCommand()
       )
@@ -44,23 +44,23 @@ public class RobotContainer {
         shooter.stopShooterCommand()
     );
 
-    this.mechStick.leftBumper()
+    this.driveStick.y()
       .onTrue(shooter.shootCommandAwayHub())
       .onFalse(shooter.stopShooterCommand());
       
-    this.mechStick.a()
+    this.driveStick.a()
       .onTrue(shooter.shootCommandAwayHub())
       .onFalse(shooter.stopShooterCommand());
 
-    this.mechStick.rightTrigger(0.25) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
+    this.driveStick.rightTrigger(0.25) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
       .onTrue(intake.deployIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
         
-    this.mechStick.b() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
+    this.driveStick.b() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
       .onTrue(intake.regurgitateIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
 
-    this.mechStick.x() //Stows intake then zero it there
+    this.driveStick.x() //Stows intake then zero it there
       .onTrue(intake.resetIntakeCommand());
 
     tank.setDefaultCommand(
