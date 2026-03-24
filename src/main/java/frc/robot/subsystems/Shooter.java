@@ -53,9 +53,9 @@ public class Shooter extends SubsystemBase{
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(Map.entry(5.0, 0.0)); //TODO put stuff in it
 
     private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1270); //TODO
-    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 1300); //TODO
+    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 1400); //TODO
     private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", 500); //TODO
-    private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2);
+    private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.5); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("Shooter/indexKp", 0.5); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("Shooter/indexKi", 0); //TODO

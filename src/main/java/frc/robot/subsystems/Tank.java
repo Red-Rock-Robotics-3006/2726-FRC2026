@@ -44,8 +44,8 @@ public class Tank extends SubsystemBase{
     private double limelightAngle = 0.0;
     private int[] hubTags; //TODO go to limelight Point of Intrest tab and set the offsets so Tx is 0 at middle of hub
     
-    private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.3);
-    private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.3);
+    private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.5);
+    private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.5);
     private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.05); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0); //TODO
@@ -72,7 +72,6 @@ public class Tank extends SubsystemBase{
     );
 
     private boolean autoAlignActive = false;
-    private boolean rumbleBig = false;
     private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 5);
     private double distanceFromHub = 0.0;
 
@@ -224,10 +223,13 @@ public class Tank extends SubsystemBase{
     
     // Uses pythagorian theorem
     public double distanceFromHub(){
-        this.distanceFromHub = alliance == DriverStation.Alliance.Red 
-        ? Math.abs(redHubX.getNumber() - this.getRobotPose().getX())
-        : Math.abs(blueHubX.getNumber() - this.getRobotPose().getX());  
-        return distanceFromHub;
+        // this.distanceFromHub = alliance == DriverStation.Alliance.Red 
+        // ? Math.abs(redHubX.getNumber() - this.getRobotPose().getX())
+        // : Math.abs(blueHubX.getNumber() - this.getRobotPose().getX());  
+        // return distanceFromHub;
+        return alliance == DriverStation.Alliance.Red 
+        ? Math.sqrt(Math.pow(2, redHubX.getNumber() - this.getRobotPose().getX()) + Math.pow(2, redHubY.getNumber() - this.getRobotPose().getY()))
+        : Math.sqrt(Math.pow(2, blueHubX.getNumber() - this.getRobotPose().getX()) + Math.pow(2, blueHubY.getNumber() - this.getRobotPose().getY()));  
     }
 
     //Uses the formula distance = (aprilTag height - mounted heigh)/ tan(mounting angle of limelight + angle to april tag)
