@@ -299,10 +299,12 @@ public class Tank extends SubsystemBase{
 
         if(autoAlignActive){
             this.turnToAngle();
-            RobotContainer.setRumble(this.isAtAngle()? 0: 0.8);
+            RobotContainer.setRumble(this.isAtAngle()? 0.25: 0.0);
         }
         else{
-            RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.2: 0);
+            RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.07: 0);
+            if(this.isAtAngle())
+                RobotContainer.setRumble(0.25);
         }
 
         this.distanceFromHub = this.distanceFromHub();
