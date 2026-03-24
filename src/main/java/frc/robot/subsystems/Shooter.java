@@ -52,8 +52,9 @@ public class Shooter extends SubsystemBase{
 
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(Map.entry(5.0, 0.0)); //TODO put stuff in it
 
-    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 10); //TODO
+    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1270); //TODO
     private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 1300); //TODO
+    private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", 500); //TODO
     private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.5); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("Shooter/indexKp", 0.5); //TODO
@@ -62,7 +63,7 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
 
     private boolean autoShootActive = false;
-    private SmartDashboardNumber shooterSpeedThreshold = new SmartDashboardNumber("Shooter/shooter-speed-threshold", 50);
+    private SmartDashboardNumber shooterSpeedThreshold = new SmartDashboardNumber("Shooter/shooter-speed-threshold", 10);
     private Shooter(){
         super("Shooter");
         AutoLogOutputManager.addObject(this);
@@ -198,11 +199,18 @@ public class Shooter extends SubsystemBase{
         );
     }
 
+    public Command backwardShootCommand(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM(backwardsShooterSpeed.getNumber()), this),
+            Commands.runOnce(() -> this.setIndexBackwardSpeed(), this)
+        );
+    }
+
     public Command shootCommandHub(){ //Shoot from specific place on field
         return Commands.sequence(
-            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber())),
-            Commands.waitUntil(() -> this.isAtShooterSpeed()),
-            Commands.runOnce(() -> this.setIndexSpeed())
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber()), this),
+            Commands.waitSeconds(this.speedUpSec.getNumber()),
+            Commands.runOnce(() -> this.setIndexSpeed(), this)
         ); 
     }
     

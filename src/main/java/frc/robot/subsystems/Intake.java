@@ -27,10 +27,10 @@ public class Intake extends SubsystemBase{
     SparkClosedLoopController hingeMotorController = hingeMotor.getClosedLoopController();
     SparkClosedLoopController rollerMotorController = rollerMotor.getClosedLoopController();
     
-    SmartDashboardNumber kPHinge = new SmartDashboardNumber( "Intake/kPHinge",0.0);
-    SmartDashboardNumber kIHinge = new SmartDashboardNumber( "Intake/kIHinge",0);
-    SmartDashboardNumber kDHinge = new SmartDashboardNumber( "Intake/kDHinge",0);
-    SmartDashboardNumber maxVelocitytHinge = new SmartDashboardNumber("Intake/MaxVelocityHinge", .20);
+    SmartDashboardNumber kPHinge = new SmartDashboardNumber( "Intake/kPHinge",0.08);
+    SmartDashboardNumber kIHinge = new SmartDashboardNumber( "Intake/kIHinge",0.0);
+    SmartDashboardNumber kDHinge = new SmartDashboardNumber( "Intake/kDHinge",0.02);
+    SmartDashboardNumber maxVelocitytHinge = new SmartDashboardNumber("Intake/MaxVelocityHinge", .00020);
     SmartDashboardNumber maxAccel = new SmartDashboardNumber("Intake/MaxAccel", .20);
 
     SmartDashboardNumber kPRoller = new SmartDashboardNumber( "Intake/kPRoller",0.2);
@@ -41,16 +41,16 @@ public class Intake extends SubsystemBase{
     
     SmartDashboardNumber intakeSpeed = new SmartDashboardNumber("Intake/intakeSpeed",-0.1);
     SmartDashboardNumber rollerSpeedBack = new SmartDashboardNumber("Intake/backSpeed",0.1);
-    SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", -10.233);
+    SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", -10.433);
     SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
-    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.2);
+    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.6);
 
     SparkFlexConfig hingeConfig = new SparkFlexConfig();
     SparkFlexConfig rollerConfig = new SparkFlexConfig();
 
-    private SmartDashboardNumber currentThreshold = new SmartDashboardNumber("Intake/current-threshold", 50);
+    private SmartDashboardNumber currentThreshold = new SmartDashboardNumber("Intake/current-threshold", 25);
 
     public Intake(){
         super();
@@ -64,7 +64,7 @@ public class Intake extends SubsystemBase{
             .maxAcceleration(maxAccel.getNumber());
             // .outputRange(kMinOutputHinge.getNumber(), kMaxOutputHinge.getNumber());
 
-        rollerConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(60);
+        rollerConfig.idleMode(IdleMode.kCoast).smartCurrentLimit(60);
         rollerConfig.closedLoop
             .p(kPRoller.getNumber())
             .i(kIRoller.getNumber())
@@ -92,7 +92,7 @@ public class Intake extends SubsystemBase{
         this.rollerMotor.set(speed);
     }
     private void startIntaking(){
-        this.setIntakeSpeed(rollerSpeed.getNumber());
+        this.setIntakeSpeed(-rollerSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "INTAKING");
     }
 
@@ -115,7 +115,7 @@ public class Intake extends SubsystemBase{
 // do sumthin abt this idk
     private void resetIntake(){
         this.stopIntake();
-        this.hingeMotor.getEncoder().setPosition(0.2);
+        this.hingeMotor.getEncoder().setPosition(0.4);
     }
 
     public boolean isIntaking(){
@@ -180,14 +180,17 @@ public class Intake extends SubsystemBase{
         ||this.kDRoller.hasChanged() 
         // ||this.kMinOutputRoller.hasChanged() 
         // ||this.kMaxOutputRoller.hasChanged() 
+        ||this.maxVelocitytHinge.hasChanged()
         ){
-        this.hingeConfig.closedLoop.p(this.kPHinge.getNumber()).i(this.kIHinge.getNumber()).d(this.kDHinge.getNumber());
-        this.rollerConfig.closedLoop.p(this.kPRoller.getNumber()).i(this.kIRoller.getNumber()).d(this.kDRoller.getNumber());
-        SmartDashboard.putNumber("Intake/intake-current-velocity", hingeMotor.getEncoder().getVelocity());
+            this.hingeConfig.closedLoop.p(this.kPHinge.getNumber()).i(this.kIHinge.getNumber()).d(this.kDHinge.getNumber()).maxMotion.cruiseVelocity(maxVelocitytHinge.getNumber()).maxAcceleration(maxAccel.getNumber());
+            this.rollerConfig.closedLoop.p(this.kPRoller.getNumber()).i(this.kIRoller.getNumber()).d(this.kDRoller.getNumber());
         }
-
+    
+        SmartDashboard.putNumber("Intake/Requested-set-value", hingeMotor.getAppliedOutput());
+        SmartDashboard.putNumber("Intake/intake-current-velocity", hingeMotor.getEncoder().getVelocity());
         this.intakePos.putNumber(this.hingeMotor.getEncoder().getPosition());
         SmartDashboard.putNumber("Intake/current", this.hingeMotor.getOutputCurrent());
+        SmartDashboard.putNumber("Intake/current-rollers", this.rollerMotor.getOutputCurrent());
     }
 
     public static Intake getInstance(){

@@ -13,7 +13,7 @@ public class Autos {
 
     public static Command midPreload(){
         return Commands.sequence(
-            shooter.autoAimShootCommand(),
+            shooter.shootCommandAwayHub(),
             Commands.waitSeconds(shootSeconds.getNumber()),
             shooter.stopShooterCommand()
         );
@@ -21,7 +21,7 @@ public class Autos {
 
     public static Command rightPreload(){
         return Commands.sequence(
-            shooter.autoAimShootCommand(),
+            shooter.shootCommandAwayHub(),
             Commands.waitSeconds(shootSeconds.getNumber()),
             shooter.stopShooterCommand()
         );
@@ -29,7 +29,7 @@ public class Autos {
 
     public static Command leftPreload(){
         return Commands.sequence(
-            shooter.autoAimShootCommand(),
+            shooter.shootCommandAwayHub(),
             Commands.waitSeconds(shootSeconds.getNumber()),
             shooter.stopShooterCommand()
         );
