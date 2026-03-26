@@ -8,6 +8,7 @@ import choreo.Choreo;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -29,7 +30,7 @@ public class RobotContainer {
   private final LED led = LED.getInstance();
   // private final LEDTest ledTest = LEDTest.getInstance();
 
-  private SendableChooser <Command> autoChooser = new SendableChooser<>();
+  private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
   public RobotContainer() {
     configureBindings();
@@ -38,30 +39,30 @@ public class RobotContainer {
 
   private void configureBindings() {
     
-    driveStick.leftBumper()
-      .onTrue(
-        shooter.autoAimShootCommand()
-      )
-      .onFalse(
-        shooter.stopShooterCommand()
-    );
+    // driveStick.leftBumper()
+    //   .onTrue(shooter.autoAimShootCommand())
+    //   .onFalse(shooter.stopShooterCommand());
     driveStick.y()
-      .onTrue(shooter.shootCommandHub())
+      .onTrue(shooter.decideWhatShoot())
       .onFalse(shooter.stopShooterCommand());
       
     driveStick.leftTrigger(0.25)
-      .onTrue(shooter.shootCommandAwayHub())
+      .onTrue(shooter.shootLobCommand())
       .onFalse(shooter.stopShooterCommand());
 
-    driveStick.rightBumper()
-      .onTrue(tank.turnToHubCommand());
+    // driveStick.rightBumper()
+    //   .onTrue(tank.turnToHubCommand());
 
     driveStick.rightTrigger(0.25) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
       .onTrue(intake.deployIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
         
+    driveStick.b()
+      .onTrue(intake.spinRollerCommand())
+      .onFalse(intake.stopIntakeRollerCommand());
+
     driveStick.povRight() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
-      .onTrue(intake.regurgitateIntakeCommand())
+      .onTrue(intake.regurgitIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
 
     driveStick.povUp()
@@ -71,6 +72,14 @@ public class RobotContainer {
     driveStick.x() //Stows intake then zero it there
       .onTrue(intake.resetIntakeCommand());
 
+    // driveStick.a()
+    //   .onTrue(shooter.shootLobCommand())
+    //   .onFalse(shooter.stopShooterCommand());
+    
+    driveStick.leftBumper()
+      .onTrue(Commands.runOnce(() -> tank.setSlowActive(true)))
+      .onFalse(Commands.runOnce(() -> tank.setSlowActive(false)));
+  
     tank.setDefaultCommand(
       Commands.run(() -> tank.drive(-driveStick.getLeftY(), driveStick.getRightX()), tank)
     );
@@ -95,6 +104,7 @@ public class RobotContainer {
   }
 
   private void configureSelector(){
+    SmartDashboard.putData("Auto/Selector", autoChooser);
     autoChooser.setDefaultOption("No auto", Commands.print("No auto"));
 
     autoChooser.addOption("midPreload", Autos.midPreload());

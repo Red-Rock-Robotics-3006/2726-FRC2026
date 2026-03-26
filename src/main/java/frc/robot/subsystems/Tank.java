@@ -44,17 +44,20 @@ public class Tank extends SubsystemBase{
     private double limelightAngle = 0.0;
     private int[] hubTags; //TODO go to limelight Point of Intrest tab and set the offsets so Tx is 0 at middle of hub
     
-    private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.5);
-    private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.5);
+    private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.8);
+    private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
     private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.05); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0); //TODO
+
+    private SmartDashboardNumber ambiguityThreshold = new SmartDashboardNumber("Limelight/ambiguity-threshold", 0.8);
+    private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 4);
     
     private PIDController alignPID = new PIDController(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
     private SmartDashboardNumber alignPIDTolerance = new SmartDashboardNumber("Tank/align-PID-tolerance", 5.0);
     private DriverStation.Alliance alliance = Alliance.Blue;
     
-    private double[] limelightStDev = {0.7, 0.7, 99999};
+    private double[] limelightStDev = {0.7, 0.7, 0.8};
     private double[] encoderStDev = {0.5, 0.5, 0.7};
     private double[] visionStDev = {0.2, 0.2, 0.5};
     private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
@@ -72,7 +75,9 @@ public class Tank extends SubsystemBase{
     );
 
     private boolean autoAlignActive = false;
-    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 5);
+    private boolean turnSlowActive = false;
+    private SmartDashboardNumber slowTurnMax = new SmartDashboardNumber("Tank/slow-turn-speed-max", 0.3);
+    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 8);
     private double distanceFromHub = 0.0;
 
     private SmartDashboardNumber redHubX = new SmartDashboardNumber("Tank/Points/red-hub-x", 4.629);
@@ -128,16 +133,38 @@ public class Tank extends SubsystemBase{
 
     
     public void drive(double drive, double turn){
-        double driveValue = drive * maxDrive.getNumber();
-        double turnValue = turn * maxDrive.getNumber();
-        SmartDashboard.putNumber("Tank/drive-value", driveValue);
-        SmartDashboard.putNumber("Tank/drive", drive);
-        SmartDashboard.putNumber("Tank/trun-value", turnValue);
-        SmartDashboard.putNumber("Tank/turn", turn);
-        this.driveRaw(driveValue, turnValue);
+        double driveValue = 0.0;
+        double turnValue = 0.0;
+        if(turnSlowActive){
+            driveValue = drive * maxDrive.getNumber();
+            turnValue = turn * slowTurnMax.getNumber();
+            SmartDashboard.putNumber("Tank/drive-value-slow", driveValue);
+            SmartDashboard.putNumber("Tank/drive-slow", drive);
+            SmartDashboard.putNumber("Tank/trun-value-slow", turnValue);
+            SmartDashboard.putNumber("Tank/turn-slow", turn);
+            SmartDashboard.putBoolean("Tank/slow-turn-active", turnSlowActive);
+            this.driveRaw(driveValue, turnValue);
+        }
+        else{
+            driveValue = drive * maxDrive.getNumber();
+            turnValue = turn * maxTurn.getNumber();
+            SmartDashboard.putNumber("Tank/drive-value", driveValue);
+            SmartDashboard.putNumber("Tank/drive", drive);
+            SmartDashboard.putNumber("Tank/trun-value", turnValue);
+            SmartDashboard.putNumber("Tank/turn", turn);
+            SmartDashboard.putBoolean("Tank/slow-turn-active", turnSlowActive);
+            this.driveRaw(driveValue, turnValue);
+        }
     }
 
-    // //returns which limelight sees april tag on hub
+    public boolean isSlowActivated(){
+        return turnSlowActive;
+    }
+
+    public void setSlowActive(boolean value){
+        this.turnSlowActive = value;
+    }
+
     // private int getLimelight(){
     //     for(int i = 0; i < this.limelights.length; i++){
     //         if(LimelightHelpers.getTV(limelights[i])){
@@ -181,7 +208,7 @@ public class Tank extends SubsystemBase{
 
     //Checks if facing target
     public boolean isAtAngle(){
-        return Math.abs(this.getAngleToTurn()) <= isAtAngleThreshold.getNumber(); 
+        return Math.abs(this.getAngleToTurn() -getRobotPose().getRotation().getDegrees()) <= isAtAngleThreshold.getNumber(); 
     }
     
     //returns estimated pose in Pose2d which has (x in meters, y in meters, rotation)  
@@ -191,8 +218,8 @@ public class Tank extends SubsystemBase{
     
     //returns angle(degrees) that robot needs to be at to face the hub
     public double getAngleToHub(){
-        return alliance == DriverStation.Alliance.Red
-        ? Math.atan2(redHubY.getNumber() - this.getRobotPose().getY(), redHubX.getNumber() -this.getRobotPose().getX())*180/Math.PI
+        return  alliance == DriverStation.Alliance.Red
+        ? Math.atan2(redHubY.getNumber() - this.getRobotPose().getY(), redHubX.getNumber() -this.getRobotPose().getX())*180/Math.PI 
         : Math.atan2(blueHubY.getNumber() - this.getRobotPose().getY(), blueHubX.getNumber() - this.getRobotPose().getX())*180/Math.PI;
         
     }
@@ -210,10 +237,13 @@ public class Tank extends SubsystemBase{
     }
 
     //decides if hub turn or lob turn is better
+    //The angle you need to turn to, to face the target(You must be at this angle to be facing the target)
     public double getAngleToTurn(){
-        return this.getRobotPose().getX() <= redHubX.getNumber() && this.alliance == DriverStation.Alliance.Red ||  this.getRobotPose().getX() >= blueHubX.getNumber() && this.alliance == DriverStation.Alliance.Blue
+        double angle =  (this.getRobotPose().getX() <= redHubX.getNumber() && this.alliance == DriverStation.Alliance.Red ||  this.getRobotPose().getX() >= blueHubX.getNumber() && this.alliance == DriverStation.Alliance.Blue
         ? getAngleToHub()
-        : getAngleToLob();
+        : getAngleToLob());
+
+        return angle < 0? angle +180: angle-180;
     }
     
     private void turnToAngle(){
@@ -272,8 +302,11 @@ public class Tank extends SubsystemBase{
         );
 
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
-        if(mt1.tagCount == 1 && mt1.rawFiducials.length == 1){
-            if(mt1.rawFiducials[0].ambiguity > 0.7 || mt1.rawFiducials[0].distToCamera > 4) doRejectUpdate = true; 
+        if(mt1.tagCount >= 1 && mt1.rawFiducials.length >= 1){
+            doRejectUpdate = mt1.rawFiducials[0].ambiguity > ambiguityThreshold.getNumber() || mt1.rawFiducials[0].distToCamera > distanceToCameraThreshold.getNumber(); 
+            
+            SmartDashboard.putNumber("Limelight/ambiguity", mt1.rawFiducials[0].ambiguity);
+            SmartDashboard.putNumber("Limelight/distance-to-camera", mt1.rawFiducials[0].distToCamera);
         }
         if(mt1.tagCount == 0) doRejectUpdate = true;
         if(!doRejectUpdate){
@@ -281,6 +314,7 @@ public class Tank extends SubsystemBase{
             m_poseEstimator.addVisionMeasurement(mt1.pose, mt1.timestampSeconds);
         }
         SmartDashboard.putBoolean("Limelight/" + limelightName+ "/seesAprilTag", mt1.tagCount > 0);
+        SmartDashboard.putBoolean("Limelight/is-at-angle", this.isAtAngle());
         Logger.recordOutput("Limelight/" + limelightName+ "/seesAprilTag", mt1.tagCount > 0);
         Logger.recordOutput("Limelight/" + limelightName + "/isAccepted", !doRejectUpdate);
         SmartDashboard.putBoolean("Limelight/" + limelightName + "/isAccepted", !doRejectUpdate);
@@ -302,9 +336,9 @@ public class Tank extends SubsystemBase{
             RobotContainer.setRumble(this.isAtAngle()? 0.25: 0.0);
         }
         else{
-            RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.07: 0);
+            RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.02: 0);
             if(this.isAtAngle())
-                RobotContainer.setRumble(0.25);
+                RobotContainer.setRumble(0.5);
         }
 
         this.distanceFromHub = this.distanceFromHub();

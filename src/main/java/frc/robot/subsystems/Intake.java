@@ -22,9 +22,12 @@ import redrocklib.logging.SmartDashboardNumber;
 public class Intake extends SubsystemBase{
     public static Intake instance = null;
     private final SparkFlex hingeMotor = new SparkFlex(22, MotorType.kBrushless);
+    // private final SparkFlex hingeMotor?2 = new SparkFlex(23, MotorType.kBrushless);
     private final SparkFlex rollerMotor = new SparkFlex(21, MotorType.kBrushless);
+    private final SparkFlex rollerMotor2 = new SparkFlex(23, MotorType.kBrushless);
 
     SparkClosedLoopController hingeMotorController = hingeMotor.getClosedLoopController();
+    SparkClosedLoopController rollerMotorController2 = rollerMotor2.getClosedLoopController();
     SparkClosedLoopController rollerMotorController = rollerMotor.getClosedLoopController();
     
     SmartDashboardNumber kPHinge = new SmartDashboardNumber( "Intake/kPHinge",0.08);
@@ -40,12 +43,12 @@ public class Intake extends SubsystemBase{
     // SmartDashboardNumber kMaxOutputRoller = new SmartDashboardNumber("Intake/kMaxOutputRoller", 1);
     
     SmartDashboardNumber intakeSpeed = new SmartDashboardNumber("Intake/intakeSpeed",-0.1);
-    SmartDashboardNumber rollerSpeedBack = new SmartDashboardNumber("Intake/backSpeed",0.1);
+    SmartDashboardNumber rollerSpeedBack = new SmartDashboardNumber("Intake/backSpeed",0.3);
     SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", -10.433);
     SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
-    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.6);
+    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.7);
 
     SparkFlexConfig hingeConfig = new SparkFlexConfig();
     SparkFlexConfig rollerConfig = new SparkFlexConfig();
@@ -73,23 +76,26 @@ public class Intake extends SubsystemBase{
 
         this.hingeMotor.configure(hingeConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         this.rollerMotor.configure(rollerConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        this.rollerMotor2.configure(rollerConfig, com.revrobotics.ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
     }
 
     
-    
     private void deployIntake(){
         this.hingeMotorController.setSetpoint(deployPos.getNumber(), ControlType.kPosition);
+        // this.hingeMotorController2.setSetpoint(deployPos.getNumber(), ControlType.kPosition);
         Logger.recordOutput("Intake/Position", "DEPLOYED");
     }
     
     private void stowIntake(){
         Logger.recordOutput("Intake/Position", "STOWED");
         this.hingeMotorController.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
+        // this.hingeMotorController2.setSetpoint(stowPos.getNumber(), ControlType.kPosition);
         // this.hingeMotorController.getMAXMotionSetpointPosition()
     }
 
     private void setIntakeSpeed(double speed){
         this.rollerMotor.set(speed);
+        this.rollerMotor2.set(speed);
     }
     private void startIntaking(){
         this.setIntakeSpeed(-rollerSpeed.getNumber());
@@ -98,6 +104,7 @@ public class Intake extends SubsystemBase{
 
     private void stopIntake(){
         this.hingeMotor.set(0);
+        // this.hingeMotor2.set(0);
     }
 
     private void regurgitateIntake(){
@@ -110,12 +117,14 @@ public class Intake extends SubsystemBase{
     }
 
     private void normalizeIntake(){
-        this.hingeMotor.set(0.05);
+        this.hingeMotor.set(0.1);
+        // this.hingeMotor2.set(0.05);
     }
 // do sumthin abt this idk
     private void resetIntake(){
         this.stopIntake();
         this.hingeMotor.getEncoder().setPosition(0.4);
+        // this.hingeMotor2.getEncoder().setPosition(0.4);
     }
 
     public boolean isIntaking(){
@@ -125,6 +134,10 @@ public class Intake extends SubsystemBase{
     }
 
     public Command spinRollerCommand(){
+        return Commands.runOnce(() -> this.startIntaking(), this);
+    }
+
+    public Command spinRollerBackwardsCommand(){
         return Commands.runOnce(() -> this.startIntaking(), this);
     }
 
@@ -138,22 +151,26 @@ public class Intake extends SubsystemBase{
 
     public Command deployIntakeCommand(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.deployIntake(), this),
-            this.spinRollerCommand()
+            Commands.runOnce(() -> this.stowIntake(), this)
+            // this.stopIntakeRollerCommand()
         );
     }
 
-    public Command regurgitateIntakeCommand(){
-        return Commands.sequence(
-            Commands.runOnce(() -> this.deployIntake(), this),
-            this.regurgitIntakeCommand()
-        );
+    public Command deployIntakeNoRoller(){
+        return Commands.runOnce(() -> this.stowIntake(), this);
     }
+
+    // public Command regurgitateIntakeCommand(){
+    //     return Commands.sequence(
+    //         Commands.runOnce(() -> this.stowIntake(), this),
+    //         this.regurgitIntakeCommand()
+    //     );
+    // }
 
     public Command stowIntakeCommand(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.stowIntake(), this),
-            this.stopIntakeRollerCommand()
+            Commands.runOnce(() -> this.deployIntake(), this)
+            // this.spinRollerCommand()
         );
     }
 
