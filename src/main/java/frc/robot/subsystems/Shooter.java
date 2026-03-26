@@ -274,10 +274,16 @@ public class Shooter extends SubsystemBase{
                 this.setIndexSpeed();
         }
         SmartDashboard.putNumber("Shooter/indexer-current-position", indexMotor.getEncoder().getPosition());
+        Logger.recordOutput("Shooter/IndexerAppliedCurrent", this.indexMotor.getOutputCurrent());
+        Logger.recordOutput("Shooter/IndexerAppliedVelocity-dot-set", this.indexMotor.getAppliedOutput());
+        Logger.recordOutput("Shooter/IndexerVelocity", this.indexMotor.getEncoder().getVelocity());
+        Logger.recordOutput("Shooter/ShooterAppliedCurrent", this.shooterMotor1.motor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput("Shooter/ShooterVelocity", this.shooterMotor1.motor.getVelocity().getValueAsDouble());
         SmartDashboard.putNumber("Shooter/indexer-current-velocity", indexMotor.getEncoder().getVelocity());
         SmartDashboard.putBoolean("Shooter/sees-hub-tag", tank.seesTag());
         this.isAtShooterSpeed.putBoolean((Math.abs(this.awayHubShooterSpeed.getNumber() - 
             shooterMotor1.motor.getVelocity().getValueAsDouble()*60.0)) <= shooterSpeedThreshold.getNumber());
+        Logger.recordOutput("Shooter/AtShooterSpeed", this.isAtShooterSpeed.getValue());
         // SmartDashboard.putNumberArray("shooter/distance-from-hub-inch", distFromHubInch);
         // SmartDashboard.putNumberArray("shooter/shooter-speeds-rpm", shootSpeedsRPM);
     }

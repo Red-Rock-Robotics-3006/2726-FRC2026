@@ -356,19 +356,28 @@ public class Tank extends SubsystemBase{
                 }
                 );
             }
+            SmartDashboard.putNumber("Tank/right-front-current-position", rightFront.getEncoder().getPosition());
+            SmartDashboard.putNumber("Tank/right-front-current-velocity", rightFront.getEncoder().getVelocity());
+            SmartDashboard.putNumber("Tank/left-front-current-position", leftFront.getEncoder().getPosition());
+            SmartDashboard.putNumber("Tank/left-front-current-velocity", leftFront.getEncoder().getVelocity());
+            SmartDashboard.putBoolean("Tank/sees-hub-tag", seesTag());
+            SmartDashboard.putNumber("Tank/limelight-angles-from-vertical", this.limelightAngle);
+            SmartDashboard.putNumber("Tank/limelight-height-from-ground", this.limelightHeight);
+            SmartDashboard.putString("Tank/limelights", this.limelightName);
+            for(double arr: limelightStDev){
+                SmartDashboard.putNumber("Tank/limelight-stDev", arr);
+            }
             
-        SmartDashboard.putNumber("Tank/right-front-current-position", rightFront.getEncoder().getPosition());
-        SmartDashboard.putNumber("Tank/right-front-current-velocity", rightFront.getEncoder().getVelocity());
-        SmartDashboard.putNumber("Tank/left-front-current-position", leftFront.getEncoder().getPosition());
-        SmartDashboard.putNumber("Tank/left-front-current-velocity", leftFront.getEncoder().getVelocity());
-        SmartDashboard.putBoolean("Tank/sees-hub-tag", seesTag());
-        SmartDashboard.putNumber("Tank/limelight-angles-from-vertical", this.limelightAngle);
-        SmartDashboard.putNumber("Tank/limelight-height-from-ground", this.limelightHeight);
-        SmartDashboard.putString("Tank/limelights", this.limelightName);
-        for(double arr: limelightStDev){
-            SmartDashboard.putNumber("Tank/limelight-stDev", arr);
+            Logger.recordOutput("Tank/limelight-angles-from-vertical", this.limelightAngle);
+            Logger.recordOutput("Tank/limelight-height-from-ground", this.limelightHeight);
+            Logger.recordOutput("Tank/limelights", this.limelightName);
+            Logger.recordOutput("Tank/RightVelocity", rightFront.getEncoder().getVelocity());
+            Logger.recordOutput("Tank/LeftVelocity", leftFront.getEncoder().getVelocity());
+            Logger.recordOutput("Tank/RightFrontCurrent", rightFront.getOutputCurrent());
+            Logger.recordOutput("Tank/RightBackCurrent", rightBack.getOutputCurrent());
+            Logger.recordOutput("Tank/LeftFrontCurrent", leftFront.getOutputCurrent());
+            Logger.recordOutput("Tank/LeftBackCurrent", leftBack.getOutputCurrent());
         }
-    }
 
     public static Tank getInstance(){
         if(instance == null) instance = new Tank();

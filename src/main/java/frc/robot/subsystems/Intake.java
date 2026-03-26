@@ -202,12 +202,19 @@ public class Intake extends SubsystemBase{
             this.hingeConfig.closedLoop.p(this.kPHinge.getNumber()).i(this.kIHinge.getNumber()).d(this.kDHinge.getNumber()).maxMotion.cruiseVelocity(maxVelocitytHinge.getNumber()).maxAcceleration(maxAccel.getNumber());
             this.rollerConfig.closedLoop.p(this.kPRoller.getNumber()).i(this.kIRoller.getNumber()).d(this.kDRoller.getNumber());
         }
-    
+
+        
+        Logger.recordOutput("Intake/HingeCurrentPos", hingeMotor.getEncoder().getPosition());
+        Logger.recordOutput("Intake/RollerCurrentVelocity", rollerMotor.getEncoder().getVelocity());
         SmartDashboard.putNumber("Intake/Requested-set-value", hingeMotor.getAppliedOutput());
+        Logger.recordOutput("Intake/AppliedVelocity-dot-set", hingeMotor.getAppliedOutput());
         SmartDashboard.putNumber("Intake/intake-current-velocity", hingeMotor.getEncoder().getVelocity());
+        Logger.recordOutput("Intake/HingeVelocity", hingeMotor.getEncoder().getVelocity());
         this.intakePos.putNumber(this.hingeMotor.getEncoder().getPosition());
         SmartDashboard.putNumber("Intake/current", this.hingeMotor.getOutputCurrent());
+        Logger.recordOutput("Intake/AppliedHingeCurrent", this.hingeMotor.getOutputCurrent());
         SmartDashboard.putNumber("Intake/current-rollers", this.rollerMotor.getOutputCurrent());
+        Logger.recordOutput("Intake/AppliedRollerCurrent", this.rollerMotor.getOutputCurrent());
     }
 
     public static Intake getInstance(){
