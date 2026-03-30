@@ -338,7 +338,7 @@ public class Tank extends SubsystemBase{
         else{
             RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.02: 0);
             if(this.isAtAngle())
-                RobotContainer.setRumble(0.5);
+                RobotContainer.setRumble(0.7);
         }
 
         this.distanceFromHub = this.distanceFromHub();
@@ -377,6 +377,7 @@ public class Tank extends SubsystemBase{
             Logger.recordOutput("Tank/RightBackCurrent", rightBack.getOutputCurrent());
             Logger.recordOutput("Tank/LeftFrontCurrent", leftFront.getOutputCurrent());
             Logger.recordOutput("Tank/LeftBackCurrent", leftBack.getOutputCurrent());
+            Logger.recordOutput("Limelight/Position", m_poseEstimator.getEstimatedPosition());
         }
 
     public static Tank getInstance(){

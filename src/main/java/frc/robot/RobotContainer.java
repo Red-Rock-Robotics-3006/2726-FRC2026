@@ -42,7 +42,7 @@ public class RobotContainer {
     // driveStick.leftBumper()
     //   .onTrue(shooter.autoAimShootCommand())
     //   .onFalse(shooter.stopShooterCommand());
-    driveStick.y()
+    driveStick.rightTrigger(0.25)
       .onTrue(shooter.decideWhatShoot())
       .onFalse(shooter.stopShooterCommand());
       
@@ -53,13 +53,21 @@ public class RobotContainer {
     // driveStick.rightBumper()
     //   .onTrue(tank.turnToHubCommand());
 
-    driveStick.rightTrigger(0.25) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
+    driveStick.b() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
       .onTrue(intake.deployIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
         
-    driveStick.b()
+    driveStick.rightBumper()
       .onTrue(intake.spinRollerCommand())
       .onFalse(intake.stopIntakeRollerCommand());
+
+    driveStick.a()
+      .onTrue(intake.spinRollerCommandMore())
+      .onFalse(intake.stopIntakeRollerCommand());
+    
+    driveStick.y()
+      .onTrue(shooter.startIndexerCommand())
+      .onFalse(shooter.stopIndexerCommand());
 
     driveStick.povRight() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
       .onTrue(intake.regurgitIntakeCommand())
@@ -107,9 +115,8 @@ public class RobotContainer {
     SmartDashboard.putData("Auto/Selector", autoChooser);
     autoChooser.setDefaultOption("No auto", Commands.print("No auto"));
 
-    autoChooser.addOption("midPreload", Autos.midPreload());
-    autoChooser.addOption("leftPreload", Autos.leftPreload());
-    autoChooser.addOption("rightPreload", Autos.rightPreload());
+    autoChooser.addOption("awayHubPreload", Autos.awayHubPreload());
+    autoChooser.addOption("hubPreload", Autos.hubPreload());
   }
 
   public Command getAutonomousCommand() {

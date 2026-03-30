@@ -52,11 +52,12 @@ public class Shooter extends SubsystemBase{
 
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(Map.entry(5.0, 0.0)); //TODO put stuff in it
 
-    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1270); //TODO
-    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1650); //TODO
+    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1200); //TODO
+    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 1650); //TODO
     private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 1330); //TODO
-    private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", 500); //TODO
+    private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", 1000); //TODO
     private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
+    private SmartDashboardNumber speedUpSecLob = new SmartDashboardNumber("Shooter/speed-up-seconds-lob", 0.7);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.5); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("Shooter/indexKp", 0.5); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("Shooter/indexKi", 0); //TODO
@@ -162,7 +163,7 @@ public class Shooter extends SubsystemBase{
     }
     
     private void setIndexBackwardSpeed(){
-        this.indexController.setSetpoint(-this.indexSpeed.getNumber(), ControlType.kVelocity);
+        this.indexMotor.set(-this.indexSpeed.getNumber());
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", -this.indexSpeed.getNumber());
         
     }
@@ -201,9 +202,16 @@ public class Shooter extends SubsystemBase{
         );
     }
 
+    public Command startIndexerCommand(){
+        return Commands.runOnce(() ->  this.setIndexSpeed(), this);
+    }
+    
+    public Command stopIndexerCommand(){
+        return Commands.runOnce(() ->  this.stopIndexer(), this);
+    }
     public Command backwardShootCommand(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.setShooterSpeedRPM(backwardsShooterSpeed.getNumber()), this),
+            Commands.runOnce(() -> this.setShooterSpeedRPM(-backwardsShooterSpeed.getNumber()), this),
             Commands.runOnce(() -> this.setIndexBackwardSpeed(), this)
         );
     }
@@ -228,7 +236,7 @@ public class Shooter extends SubsystemBase{
     public Command shootLobCommand(){
          return Commands.sequence(
             Commands.runOnce(() -> this.setShooterSpeedRPM(this.lobShooterSpeed.getNumber()), this),
-            Commands.waitSeconds(this.speedUpSec.getNumber()),
+            Commands.waitSeconds(this.speedUpSecLob.getNumber()),
             Commands.runOnce(() -> this.setIndexSpeed(), this)
         ); 
     }
@@ -281,6 +289,8 @@ public class Shooter extends SubsystemBase{
         Logger.recordOutput("Shooter/ShooterVelocity", this.shooterMotor1.motor.getVelocity().getValueAsDouble());
         SmartDashboard.putNumber("Shooter/indexer-current-velocity", indexMotor.getEncoder().getVelocity());
         SmartDashboard.putBoolean("Shooter/sees-hub-tag", tank.seesTag());
+        SmartDashboard.putBoolean("Shooter/isShootingMotor1", this.shooterMotor1.motor.getVelocity().getValueAsDouble() > 300);
+        SmartDashboard.putBoolean("Shooter/isShootingMotor2", this.shooterMotor2.motor.getVelocity().getValueAsDouble() > 300);
         this.isAtShooterSpeed.putBoolean((Math.abs(this.awayHubShooterSpeed.getNumber() - 
             shooterMotor1.motor.getVelocity().getValueAsDouble()*60.0)) <= shooterSpeedThreshold.getNumber());
         Logger.recordOutput("Shooter/AtShooterSpeed", this.isAtShooterSpeed.getValue());

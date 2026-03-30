@@ -9,9 +9,9 @@ public class Autos {
 
     private static Shooter shooter = Shooter.getInstance();
 
-    private static SmartDashboardNumber shootSeconds = new SmartDashboardNumber("autos/shooter-seconds", 5);
+    private static SmartDashboardNumber shootSeconds = new SmartDashboardNumber("autos/shooter-seconds", 8);
 
-    public static Command midPreload(){
+    public static Command awayHubPreload(){
         return Commands.sequence(
             shooter.shootCommandAwayHub(),
             Commands.waitSeconds(shootSeconds.getNumber()),
@@ -19,19 +19,11 @@ public class Autos {
         );
     }
 
-    public static Command rightPreload(){
+    public static Command hubPreload(){
         return Commands.sequence(
-            shooter.shootCommandAwayHub(),
-            Commands.waitSeconds(shootSeconds.getNumber()),
-            shooter.stopShooterCommand()
-        );
-    }
-
-    public static Command leftPreload(){
-        return Commands.sequence(
-            shooter.shootCommandAwayHub(),
-            Commands.waitSeconds(shootSeconds.getNumber()),
-            shooter.stopShooterCommand()
+            shooter.shootCommandHub()
+            // Commands.waitSeconds(shootSeconds.getNumber()),
+            // shooter.stopShooterCommand()
         );
     }
 }
