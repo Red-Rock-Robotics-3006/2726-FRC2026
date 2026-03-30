@@ -1,5 +1,8 @@
 package frc.robot.subsystems;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.ejml.dense.row.decomposition.eig.watched.WatchedDoubleStepQREigen_DDRM;
 import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.Logger;
@@ -12,18 +15,22 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.revrobotics.PersistMode;
 import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.vision.LimelightHelpers;
 import redrocklib.logging.SmartDashboardBoolean;
@@ -36,40 +43,46 @@ public class Shooter extends SubsystemBase{
 
     private Tank tank = Tank.getInstance();
 
-    private final RedRockTalon shooterMotor1 = new RedRockTalon(4, "Shooter/shooterMotor1");
-    private final RedRockTalon shooterMotor2 = new RedRockTalon(5, "Shooter/shooterMotor2");
-    private final SparkMax indexMotor = new SparkMax(0, MotorType.kBrushless);
+    private final RedRockTalon shooterMotor1 = new RedRockTalon(31, "Shooter/shooterMotor1");
+    private final RedRockTalon shooterMotor2 = new RedRockTalon(32, "Shooter/shooterMotor2");
+    private final SparkFlex indexMotor = new SparkFlex(33, MotorType.kBrushless);
 
-    private SparkMaxConfig indexConfig = new SparkMaxConfig();
+    private SparkFlexConfig indexConfig = new SparkFlexConfig();
     private SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
 
-    private double[] distFromHubInch; //TODO
-    private double[] shootSpeedsRPM; //TODO
+    InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(Map.entry(5.0, 0.0)); //TODO put stuff in it
 
-    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("shooter/hubShooterSpeed", 500); //TODO
-    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("shooter/awayHubShooterSpeed", 500); //TODO
-    private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("shooter/indexSpeed", 100); //TODO
-    private SmartDashboardNumber indexKp = new SmartDashboardNumber("shooter/indexKp", 0); //TODO
-    private SmartDashboardNumber indexKi = new SmartDashboardNumber("shooter/indexKi", 0); //TODO
-    private SmartDashboardNumber indexKd = new SmartDashboardNumber("shooter/indexKd", 0); //TODO
+    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1200); //TODO
+    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 1650); //TODO
+    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 1330); //TODO
+    private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", 1000); //TODO
+    private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
+    private SmartDashboardNumber speedUpSecLob = new SmartDashboardNumber("Shooter/speed-up-seconds-lob", 0.7);
+    private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.5); //TODO
+    private SmartDashboardNumber indexKp = new SmartDashboardNumber("Shooter/indexKp", 0.5); //TODO
+    private SmartDashboardNumber indexKi = new SmartDashboardNumber("Shooter/indexKi", 0); //TODO
+    private SmartDashboardNumber indexKd = new SmartDashboardNumber("Shooter/indexKd", 0); //TODO
+    private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
+    private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
 
     private boolean autoShootActive = false;
+    private SmartDashboardNumber shooterSpeedThreshold = new SmartDashboardNumber("Shooter/shooter-speed-threshold", 10);
     private Shooter(){
         super("Shooter");
         AutoLogOutputManager.addObject(this);
         this.shooterMotor1.withMotorOutputConfigs(
             new MotorOutputConfigs()
-            .withInverted(InvertedValue.Clockwise_Positive)
+            .withInverted(InvertedValue.CounterClockwise_Positive)
             .withPeakForwardDutyCycle(1d)
             .withPeakReverseDutyCycle(-1d)
             .withNeutralMode(NeutralModeValue.Coast)
         )
         .withSlot0Configs(
             new Slot0Configs()
-            .withKA(0) //TODO
+            .withKA(1) //TODO
             .withKS(0) //TODO
-            .withKV(0) //TODO
-            .withKP(0) //TODO
+            .withKV(1) //TODO
+            .withKP(0.5) //TODO
             .withKI(0) //TODO
             .withKD(0) //TODO 
         )
@@ -97,10 +110,10 @@ public class Shooter extends SubsystemBase{
         )
         .withSlot0Configs(
             new Slot0Configs()
-            .withKA(0) //TODO
+            .withKA(1) //TODO
             .withKS(0) //TODO
-            .withKV(0) //TODO
-            .withKP(0) //TODO
+            .withKV(1) //TODO
+            .withKP(0.5) //TODO
             .withKI(0) //TODO
             .withKD(0) //TODO 
         )
@@ -130,24 +143,27 @@ public class Shooter extends SubsystemBase{
     private void setShooterSpeedRPM(double RPM){
         this.shooterMotor1.setMotionMagicVelocity(RPM);
         this.shooterMotor2.setMotionMagicVelocity(RPM);
+        SmartDashboard.putNumber("Shooter/rpm", RPM);
         Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", RPM );
         Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", RPM );
     }
     
     private void stopShooter(){
-        this.shooterMotor1.setMotionMagicVelocity(0);
-        this.shooterMotor2.setMotionMagicVelocity(0);
+        this.shooterMotor1.motor.set(0);
+        this.shooterMotor2.motor.set(0);
         Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", 0 );
         Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", 0 );
     }
 
     private void setIndexSpeed(){
-        this.indexController.setSetpoint(this.indexSpeed.getNumber(), ControlType.kVelocity);
+        // this.indexController.setSetpoint(this.indexSpeed.getNumber(), ControlType.kVelocity);
+        this.indexMotor.set(indexSpeed.getNumber());
+        SmartDashboard.putNumber("Shooter/index-live-speed", this.indexMotor.getEncoder().getVelocity());
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", this.indexSpeed.getNumber());
     }
     
     private void setIndexBackwardSpeed(){
-        this.indexController.setSetpoint(-this.indexSpeed.getNumber(), ControlType.kVelocity);
+        this.indexMotor.set(-this.indexSpeed.getNumber());
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", -this.indexSpeed.getNumber());
         
     }
@@ -157,69 +173,91 @@ public class Shooter extends SubsystemBase{
         Logger.recordOutput("Shooter/indexMotorTargetVelocity", 0);
     }
 
-    private double getShooterSpeed(double[] distance, double[] speeds){
-        int idx1 = 0, idx2 = 0;
-        if(tank.distanceFromHub() >= distance[distance.length-1]) return speeds[speeds.length-1];
-        if(tank.distanceFromHub() <= distance[0]) return speeds[0];
-        for(int i = 1; i < distance.length; i++){
-            if(tank.distanceFromHub() <= distance[i]){
-                idx2 = i;
-                idx1 = i-1;
-                //Uses y = y0 + (x - x0) * (y - y0)/ (x - x0) to interpolate data
-                double speed = speeds[idx1] + (tank.distanceFromHub() - distance[idx1])*(speeds[idx2]-speeds[idx1])/(distance[idx2]-distance[idx1]);
-                Logger.recordOutput("Shooter/AutoAimShooterSpeed",  speed);
-                return speed;
-            }
-        }
-        return 0;
+    private double getShooterSpeed(double distance){
+        return this.table.get(distance);
     }
 
     public boolean isAtShooterSpeed(){ //Checks if shooter is up to speed
-        return (Math.abs(this.getShooterSpeed(distFromHubInch, shootSpeedsRPM) - 
-        shooterMotor1.motor.getVelocity().getValueAsDouble()*60.0)) <= 100 && (Math.abs(this.getShooterSpeed(distFromHubInch, shootSpeedsRPM) - 
-        shooterMotor2.motor.getVelocity().getValueAsDouble()*60.0)) <= 100; //getVelocity() is in RPS so convert to RPM
+        double shooterSpeed = this.getShooterSpeed(tank.distanceFromHub());
+        return (Math.abs(shooterSpeed - 
+        shooterMotor1.motor.getVelocity().getValueAsDouble()*60.0)) <= shooterSpeedThreshold.getNumber(); //getVelocity() is in RPS so convert to RPM
+    }
+
+    public boolean isAtAwayHubShooterSpeed(){ //Checks if shooter is up to speed
+        return isAtShooterSpeed.getValue(); //getVelocity() is in RPS so convert to RPM
     }
 
     public Command autoAimShootCommand(){ //auto aligns tank and shoots
         return Commands.parallel(
-            new FunctionalCommand(
-                () -> {
-                    autoShootActive = true;
-                }, 
-                () -> {
-                }, 
-                (interrupted) -> {
-                    this.autoShootActive = false;
-                }, 
-                () -> this.isAtShooterSpeed(),
-                this
-            ),
+            Commands.runOnce(() -> this.autoShootActive = true, this),
             tank.turnToHubCommand()
         );
     }
 
     public Command stopShooterCommand(){
         return Commands.sequence(
-            runOnce(() -> this.stopShooter()),
-            Commands.runOnce(() -> this.stopIndexer())
+            Commands.runOnce(() -> this.autoShootActive = false),
+            Commands.runOnce(() -> this.stopShooter(), this),
+            Commands.runOnce(() -> this.stopIndexer(), this)
+        );
+    }
+
+    public Command startIndexerCommand(){
+        return Commands.runOnce(() ->  this.setIndexSpeed(), this);
+    }
+    
+    public Command stopIndexerCommand(){
+        return Commands.runOnce(() ->  this.stopIndexer(), this);
+    }
+    public Command backwardShootCommand(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM(-backwardsShooterSpeed.getNumber()), this),
+            Commands.runOnce(() -> this.setIndexBackwardSpeed(), this)
         );
     }
 
     public Command shootCommandHub(){ //Shoot from specific place on field
         return Commands.sequence(
-            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber())),
-            Commands.waitUntil(() -> this.isAtShooterSpeed()),
-            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber()))
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.hubShooterSpeed.getNumber()), this),
+            Commands.waitSeconds(this.speedUpSec.getNumber()),
+            Commands.runOnce(() -> this.setIndexSpeed(), this)
         ); 
     }
     
     public Command shootCommandAwayHub(){
         return Commands.sequence(
-            Commands.runOnce(() -> this.setShooterSpeedRPM(this.awayHubShooterSpeed.getNumber())),
-            Commands.waitUntil(() -> this.isAtShooterSpeed()),
-            Commands.runOnce(() -> this.setShooterSpeedRPM(this.awayHubShooterSpeed.getNumber()))
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.awayHubShooterSpeed.getNumber()), this),
+            Commands.waitSeconds(this.speedUpSec.getNumber()),
+            // Commands.waitUntil(() -> this.isAtShooterSpeed()),
+            Commands.runOnce(() -> this.setIndexSpeed(), this)
         ); 
     }
+
+    public Command shootLobCommand(){
+         return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM(this.lobShooterSpeed.getNumber()), this),
+            Commands.waitSeconds(this.speedUpSecLob.getNumber()),
+            Commands.runOnce(() -> this.setIndexSpeed(), this)
+        ); 
+    }
+
+    public Command decideWhatShoot(){
+        return tank.distanceFromHub()  <= shootCommandThreshold.getNumber()? shootCommandHub(): shootCommandAwayHub();
+    }
+
+    // public Command shootCommandAwayHub(){
+    //     return new FunctionalCommand(
+    //         () -> this.setShooterSpeedRPM(this.awayHubShooterSpeed.getNumber()), 
+    //         () -> {
+    //         }, 
+    //         (interrupted) -> {
+    //             this.setIndexSpeed();
+    //         }, 
+    //         () -> this.isAtAwayHubShooterSpeed(), 
+    //         this
+    //     );
+    //     new Par
+    // }
 
     public Command feedBackward(){
         return Commands.runOnce(() -> this.setIndexBackwardSpeed());
@@ -239,15 +277,25 @@ public class Shooter extends SubsystemBase{
         }
 
         if(autoShootActive){
-            this.setShooterSpeedRPM((int)this.getShooterSpeed(distFromHubInch, shootSpeedsRPM));
+            this.setShooterSpeedRPM((int)this.getShooterSpeed(tank.distanceFromHub()));
             if(this.isAtShooterSpeed())
                 this.setIndexSpeed();
         }
-        SmartDashboard.putNumber("shooter/indexer-current-position", indexMotor.getEncoder().getPosition());
-        SmartDashboard.putNumber("shooter/indexer-current-velocity", indexMotor.getEncoder().getVelocity());
-        SmartDashboard.putBoolean("shooter/sees-hub-tag", tank.seesTag());
-        SmartDashboard.putNumberArray("shooter/distance-from-hub-inch", distFromHubInch);
-        SmartDashboard.putNumberArray("shooter/shooter-speeds-rpm", shootSpeedsRPM);
+        SmartDashboard.putNumber("Shooter/indexer-current-position", indexMotor.getEncoder().getPosition());
+        Logger.recordOutput("Shooter/IndexerAppliedCurrent", this.indexMotor.getOutputCurrent());
+        Logger.recordOutput("Shooter/IndexerAppliedVelocity-dot-set", this.indexMotor.getAppliedOutput());
+        Logger.recordOutput("Shooter/IndexerVelocity", this.indexMotor.getEncoder().getVelocity());
+        Logger.recordOutput("Shooter/ShooterAppliedCurrent", this.shooterMotor1.motor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput("Shooter/ShooterVelocity", this.shooterMotor1.motor.getVelocity().getValueAsDouble());
+        SmartDashboard.putNumber("Shooter/indexer-current-velocity", indexMotor.getEncoder().getVelocity());
+        SmartDashboard.putBoolean("Shooter/sees-hub-tag", tank.seesTag());
+        SmartDashboard.putBoolean("Shooter/isShootingMotor1", this.shooterMotor1.motor.getVelocity().getValueAsDouble() > 300);
+        SmartDashboard.putBoolean("Shooter/isShootingMotor2", this.shooterMotor2.motor.getVelocity().getValueAsDouble() > 300);
+        this.isAtShooterSpeed.putBoolean((Math.abs(this.awayHubShooterSpeed.getNumber() - 
+            shooterMotor1.motor.getVelocity().getValueAsDouble()*60.0)) <= shooterSpeedThreshold.getNumber());
+        Logger.recordOutput("Shooter/AtShooterSpeed", this.isAtShooterSpeed.getValue());
+        // SmartDashboard.putNumberArray("shooter/distance-from-hub-inch", distFromHubInch);
+        // SmartDashboard.putNumberArray("shooter/shooter-speeds-rpm", shootSpeedsRPM);
     }
 
     public static Shooter getInstance(){
