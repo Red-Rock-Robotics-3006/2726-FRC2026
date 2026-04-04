@@ -21,7 +21,7 @@ import frc.robot.subsystems.Tank;
 
 public class RobotContainer {
 
-  private final static CommandXboxController driveStick = new CommandXboxController(0);
+  public final static CommandXboxController driveStick = new CommandXboxController(0);
   // private final CommandXboxController mechStick = new CommandXboxController(1);
 
   private final Intake intake = Intake.getInstance();
@@ -42,24 +42,37 @@ public class RobotContainer {
     // driveStick.leftBumper()
     //   .onTrue(shooter.autoAimShootCommand())
     //   .onFalse(shooter.stopShooterCommand());
-    driveStick.y()
-      .onTrue(shooter.decideWhatShoot())
-      .onFalse(shooter.stopShooterCommand());
+    // driveStick.rightTrigger(0.25)
+    //   .onTrue(shooter.decideWhatShoot())
+    //   .onFalse(shooter.stopShooterCommand());
       
+    driveStick.rightTrigger(0.25)
+      .onTrue(shooter.autoShootCommand())
+      .onFalse(shooter.stopShooterCommand());
+
     driveStick.leftTrigger(0.25)
       .onTrue(shooter.shootLobCommand())
       .onFalse(shooter.stopShooterCommand());
 
-    // driveStick.rightBumper()
-    //   .onTrue(tank.turnToHubCommand());
+    driveStick.leftBumper()
+      .onTrue(tank.turnToAngleCommand())
+      .onFalse(tank.stopTurnToAngleCommand());
 
-    driveStick.rightTrigger(0.25) //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
+    driveStick.b() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
       .onTrue(intake.deployIntakeCommand())
       .onFalse(intake.stowIntakeCommand());
         
-    driveStick.b()
+    driveStick.rightBumper()
       .onTrue(intake.spinRollerCommand())
       .onFalse(intake.stopIntakeRollerCommand());
+
+    driveStick.a()
+      .onTrue(intake.spinRollerCommandMore())
+      .onFalse(intake.stopIntakeRollerCommand());
+    
+    driveStick.y()
+      .onTrue(shooter.startIndexerCommand())
+      .onFalse(shooter.stopIndexerCommand());
 
     driveStick.povRight() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
       .onTrue(intake.regurgitIntakeCommand())
@@ -76,42 +89,38 @@ public class RobotContainer {
     //   .onTrue(shooter.shootLobCommand())
     //   .onFalse(shooter.stopShooterCommand());
     
-    driveStick.leftBumper()
-      .onTrue(Commands.runOnce(() -> tank.setSlowActive(true)))
-      .onFalse(Commands.runOnce(() -> tank.setSlowActive(false)));
-  
-    tank.setDefaultCommand(
-      Commands.run(() -> tank.drive(-driveStick.getLeftY(), driveStick.getRightX()), tank)
-    );
+    // driveStick.leftBumper()
+    //   .onTrue(Commands.runOnce(() -> tank.setSlowActive(true)))
+    //   .onFalse(Commands.runOnce(() -> tank.setSlowActive(false)));
+    
   }
   // public void configureBindings(){
-  //   driveStick.a()
-  //   .onTrue(Commands.runOnce(() -> ledTest.setLEDAtAngle(), ledTest));
-  //   driveStick.b()
-  //   .onTrue(Commands.runOnce(() -> ledTest.setLEDTankDisable(), ledTest));
-  //   driveStick.rightTrigger(.25)
-  //   .onTrue(Commands.runOnce(() -> ledTest.setLEDDisable(), ledTest));
-  //   driveStick.y()
-  //   .onTrue(Commands.runOnce(() -> ledTest.setLEDAutoAiming(), ledTest));
-  //   driveStick.x()
-  //   .onTrue(Commands.runOnce(() -> ledTest.setLEDShooting(), ledTest));
-  //   driveStick.leftTrigger(.25)
-  //   .onTrue(Commands.runOnce(() -> ledTest.setLEDIntaking(), ledTest));
-  // }
-
+    //   driveStick.a()
+    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDAtAngle(), ledTest));
+    //   driveStick.b()
+    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDTankDisable(), ledTest));
+    //   driveStick.rightTrigger(.25)
+    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDDisable(), ledTest));
+    //   driveStick.y()
+    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDAutoAiming(), ledTest));
+    //   driveStick.x()
+    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDShooting(), ledTest));
+    //   driveStick.leftTrigger(.25)
+    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDIntaking(), ledTest));
+    // }
+    
   public static void setRumble(double value){
     driveStick.setRumble(RumbleType.kBothRumble, value);
   }
-
+  
   private void configureSelector(){
     SmartDashboard.putData("Auto/Selector", autoChooser);
     autoChooser.setDefaultOption("No auto", Commands.print("No auto"));
-
-    autoChooser.addOption("midPreload", Autos.midPreload());
-    autoChooser.addOption("leftPreload", Autos.leftPreload());
-    autoChooser.addOption("rightPreload", Autos.rightPreload());
+    
+    autoChooser.addOption("awayHubPreload", Autos.awayHubPreload());
+    autoChooser.addOption("hubPreload", Autos.hubPreload());
   }
-
+  
   public Command getAutonomousCommand() {
     return autoChooser.getSelected();
   }

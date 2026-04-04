@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.Logger;
 
+import com.ctre.phoenix6.Utils;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -11,6 +12,7 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import choreo.auto.AutoFactory;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
@@ -23,12 +25,13 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.vision.LimelightHelpers;
-import redrocklib.logging.SmartDashboardBoolean;
-import redrocklib.logging.SmartDashboardNumber;
+import redrocklib.wrappers.logging.SmartDashboardBoolean;
+import redrocklib.wrappers.logging.SmartDashboardNumber;
 
 public class Tank extends SubsystemBase{
     private static Tank instance = null;
@@ -46,12 +49,13 @@ public class Tank extends SubsystemBase{
     
     private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.8);
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
-    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.05); //TODO
+    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.02); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
-    private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0); //TODO
+    private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0.003); //TODO
+    private SmartDashboardNumber turnKs = new SmartDashboardNumber("Tank/Ks", 0.15);
 
     private SmartDashboardNumber ambiguityThreshold = new SmartDashboardNumber("Limelight/ambiguity-threshold", 0.8);
-    private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 4);
+    private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 5);
     
     private PIDController alignPID = new PIDController(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
     private SmartDashboardNumber alignPIDTolerance = new SmartDashboardNumber("Tank/align-PID-tolerance", 5.0);
@@ -63,7 +67,9 @@ public class Tank extends SubsystemBase{
     private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
     private double trackWidth = 22.0;
     private boolean doRejectUpdate = false;
+    private LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
     private final Field2d field = new Field2d();
+    private final Field2d limelightPos = new Field2d();
     private DifferentialDrivePoseEstimator m_poseEstimator = new DifferentialDrivePoseEstimator(
         m_kinematics, 
         new Rotation2d(), 
@@ -77,9 +83,18 @@ public class Tank extends SubsystemBase{
     private boolean autoAlignActive = false;
     private boolean turnSlowActive = false;
     private SmartDashboardNumber slowTurnMax = new SmartDashboardNumber("Tank/slow-turn-speed-max", 0.3);
-    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 8);
+    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 7);
     private double distanceFromHub = 0.0;
+    private double angleToTarget = 0.0;
+    private double robotAngle = 0.0;
 
+    private enum RobotState{
+        AutoAlign, 
+        Driving
+    }
+
+    private RobotState state = RobotState.Driving;
+    
     private SmartDashboardNumber redHubX = new SmartDashboardNumber("Tank/Points/red-hub-x", 4.629);
     private SmartDashboardNumber redHubY = new SmartDashboardNumber("Tank/Points/red-hub-y", 4.033);
 
@@ -114,8 +129,6 @@ public class Tank extends SubsystemBase{
         rightBack.configure(rightConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftFront.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftBack.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-
-        SmartDashboard.putData("Tank/field-pos", field);
     }
 
     public void driveRaw(double drive, double turn){
@@ -208,7 +221,7 @@ public class Tank extends SubsystemBase{
 
     //Checks if facing target
     public boolean isAtAngle(){
-        return Math.abs(this.getAngleToTurn() -getRobotPose().getRotation().getDegrees()) <= isAtAngleThreshold.getNumber(); 
+        return Math.abs(angleToTarget -getRobotPose().getRotation().getDegrees()) <= isAtAngleThreshold.getNumber(); 
     }
     
     //returns estimated pose in Pose2d which has (x in meters, y in meters, rotation)  
@@ -247,7 +260,10 @@ public class Tank extends SubsystemBase{
     }
     
     private void turnToAngle(){
-        drive(0, alignPID.calculate(this.getRobotPose().getRotation().getDegrees(), getAngleToTurn()));
+        // if(angleToTarget - this.getRobotPose().getRotation().getDegrees())
+        double turn = MathUtil.clamp(-alignPID.calculate((-angleToTarget+this.getRobotPose().getRotation().getDegrees()+540)%360 - 180, 0), -1+turnKs.getNumber(), 1-turnKs.getNumber());
+        drive(0, turn + turnKs.getNumber()*Math.signum(turn));
+        SmartDashboard.putNumber("Tank/clamp-turn-auto-align", turn);
         Logger.recordOutput("Tank/Status", "TURNING_TO_Angle");
     }
     
@@ -275,19 +291,12 @@ public class Tank extends SubsystemBase{
         // return 0;
     // }
 
-    public Command turnToHubCommand(){
-        return new FunctionalCommand(
-            () -> {
-                autoAlignActive = true;
-            }, 
-            () -> {
-            },
-            (interrupted) -> {
-                autoAlignActive = false;
-            },
-            () -> this.isAtAngle(),
-            this
-        );
+    public Command turnToAngleCommand(){
+        return Commands.runOnce(() -> this.state = RobotState.AutoAlign, this);
+    }
+
+    public Command stopTurnToAngleCommand(){
+        return Commands.runOnce(() -> this.state = RobotState.Driving, this);
     }
 
     //updates poseEstimator, then checks if april tag is present, if so it updates poseEstimator with vision data
@@ -301,7 +310,8 @@ public class Tank extends SubsystemBase{
             rightMeters
         );
 
-        LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
+        mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
+
         if(mt1.tagCount >= 1 && mt1.rawFiducials.length >= 1){
             doRejectUpdate = mt1.rawFiducials[0].ambiguity > ambiguityThreshold.getNumber() || mt1.rawFiducials[0].distToCamera > distanceToCameraThreshold.getNumber(); 
             
@@ -313,6 +323,10 @@ public class Tank extends SubsystemBase{
             m_poseEstimator.setVisionMeasurementStdDevs(VecBuilder.fill(limelightStDev[0], limelightStDev[1], limelightStDev[2]));
             m_poseEstimator.addVisionMeasurement(mt1.pose, mt1.timestampSeconds);
         }
+        SmartDashboard.putNumber("Limelight/limelight/timestamp-seconds", mt1.timestampSeconds);
+        SmartDashboard.putNumber("Limelight/limelight/latency", mt1.latency);
+        SmartDashboard.putNumber("Limelight/limelight/system-time-seconds", Utils.getSystemTimeSeconds());
+        SmartDashboard.putNumber("Limelight/limelight/current-time-seconds", Utils.getCurrentTimeSeconds());
         SmartDashboard.putBoolean("Limelight/" + limelightName+ "/seesAprilTag", mt1.tagCount > 0);
         SmartDashboard.putBoolean("Limelight/is-at-angle", this.isAtAngle());
         Logger.recordOutput("Limelight/" + limelightName+ "/seesAprilTag", mt1.tagCount > 0);
@@ -322,24 +336,35 @@ public class Tank extends SubsystemBase{
 
     @Override
     public void periodic(){
+        if(state == RobotState.Driving)
+            this.drive(-RobotContainer.driveStick.getLeftY(), RobotContainer.driveStick.getRightX());
+        else if(state == RobotState.AutoAlign && !this.isAtAngle()){
+            this.turnToAngle();
+            //RobotContainer.setRumble(this.isAtAngle()? 0.25: 0.0);
+        }
+
         updateOdometry();
         field.setRobotPose(m_poseEstimator.getEstimatedPosition());
+        limelightPos.setRobotPose(mt1.pose);
+        SmartDashboard.putData("Tank/field-pos", field);
+
+        angleToTarget = getAngleToTurn();
+        robotAngle = getRobotPose().getRotation().getDegrees();
+        SmartDashboard.putNumber("Tank/angle-to-target", angleToTarget);
+        SmartDashboard.putNumber("Tank/current-robot-angle", robotAngle);
+        SmartDashboard.putData("Limelight/limelight-pos", limelightPos);
 
         if(turnKp.hasChanged()
         || turnKi.hasChanged()
-        || turnKp.hasChanged()){
+        || turnKd.hasChanged()){
             alignPID.setPID(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
         }
 
-        if(autoAlignActive){
-            this.turnToAngle();
-            RobotContainer.setRumble(this.isAtAngle()? 0.25: 0.0);
-        }
-        else{
-            RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.02: 0);
-            if(this.isAtAngle())
-                RobotContainer.setRumble(0.5);
-        }
+        //else{
+            //RobotContainer.setRumble(LimelightHelpers.getTV(limelightName)? 0.02: 0);
+            //if(this.isAtAngle())
+                //RobotContainer.setRumble(0.7);
+        //}
 
         this.distanceFromHub = this.distanceFromHub();
         SmartDashboard.putNumber("Tank/distance-from-hub", distanceFromHub);
@@ -377,6 +402,7 @@ public class Tank extends SubsystemBase{
             Logger.recordOutput("Tank/RightBackCurrent", rightBack.getOutputCurrent());
             Logger.recordOutput("Tank/LeftFrontCurrent", leftFront.getOutputCurrent());
             Logger.recordOutput("Tank/LeftBackCurrent", leftBack.getOutputCurrent());
+            Logger.recordOutput("Limelight/Position", m_poseEstimator.getEstimatedPosition());
         }
 
     public static Tank getInstance(){

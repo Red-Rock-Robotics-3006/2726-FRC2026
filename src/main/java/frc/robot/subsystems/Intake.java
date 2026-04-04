@@ -17,7 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import redrocklib.logging.SmartDashboardNumber;
+import redrocklib.wrappers.logging.SmartDashboardNumber;
 
 public class Intake extends SubsystemBase{
     public static Intake instance = null;
@@ -48,17 +48,17 @@ public class Intake extends SubsystemBase{
     SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
-    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.7);
+    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.45);
 
     SparkFlexConfig hingeConfig = new SparkFlexConfig();
     SparkFlexConfig rollerConfig = new SparkFlexConfig();
 
-    private SmartDashboardNumber currentThreshold = new SmartDashboardNumber("Intake/current-threshold", 25);
+    private SmartDashboardNumber currentThreshold = new SmartDashboardNumber("Intake/current-threshold", 45);
 
     public Intake(){
         super();
         AutoLogOutputManager.addObject(this);
-        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(60);
+        hingeConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(70);
         hingeConfig.closedLoop
             .p(kPHinge.getNumber())
             .i(kIHinge.getNumber())
@@ -101,6 +101,10 @@ public class Intake extends SubsystemBase{
         this.setIntakeSpeed(-rollerSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "INTAKING");
     }
+    private void startIntakingMore(){
+        this.setIntakeSpeed(-0.6);
+        Logger.recordOutput("Intake/Status", "INTAKING");
+    }
 
     private void stopIntake(){
         this.hingeMotor.set(0);
@@ -134,6 +138,10 @@ public class Intake extends SubsystemBase{
     }
 
     public Command spinRollerCommand(){
+        return Commands.runOnce(() -> this.startIntaking(), this);
+    }
+
+    public Command spinRollerCommandMore(){
         return Commands.runOnce(() -> this.startIntaking(), this);
     }
 

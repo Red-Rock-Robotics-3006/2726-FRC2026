@@ -1,4 +1,4 @@
-package redrocklib.logging;
+package redrocklib.wrappers.logging;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
