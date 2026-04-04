@@ -3,7 +3,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.Shooter;
-import redrocklib.logging.SmartDashboardNumber;
+import redrocklib.wrappers.logging.SmartDashboardNumber;
 
 public class Autos {
 
@@ -21,9 +21,9 @@ public class Autos {
 
     public static Command hubPreload(){
         return Commands.sequence(
-            shooter.shootCommandHub()
-            // Commands.waitSeconds(shootSeconds.getNumber()),
-            // shooter.stopShooterCommand()
+            shooter.shootCommandHub(),
+            Commands.waitSeconds(shootSeconds.getNumber()),
+            shooter.stopShooterCommand()
         );
     }
 }
