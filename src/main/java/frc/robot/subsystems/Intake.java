@@ -46,6 +46,7 @@ public class Intake extends SubsystemBase{
     SmartDashboardNumber rollerSpeedBack = new SmartDashboardNumber("Intake/backSpeed",0.3);
     SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", -10.433);
     SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
+    public boolean isIntaking = false;
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
     SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.45);
@@ -94,6 +95,7 @@ public class Intake extends SubsystemBase{
     }
 
     private void setIntakeSpeed(double speed){
+        this.isIntaking = Math.abs(speed) > 0;
         this.rollerMotor.set(speed);
         this.rollerMotor2.set(speed);
     }
@@ -131,13 +133,13 @@ public class Intake extends SubsystemBase{
         // this.hingeMotor2.getEncoder().setPosition(0.4);
     }
 
-    public boolean isIntaking(){
-        if(hingeMotor.getEncoder().getPosition() > 5) 
-            Logger.recordOutput("Intake/Position", "INTAKING");
-        return hingeMotor.getEncoder().getPosition() > 5; //TODO
-    }
+        // if(hingeMotor.getEncoder().getPosition() > 5) 
+            // Logger.recordOutput("Intake/Position", "INTAKING");
+        // return this.rollerMotor.getEncoder().getVelocity() > 10 || this.rollerMotor2.getEncoder().getVelocity() > 10; //TODO
+    // }
 
     public Command spinRollerCommand(){
+
         return Commands.runOnce(() -> this.startIntaking(), this);
     }
 
@@ -164,6 +166,7 @@ public class Intake extends SubsystemBase{
         );
     }
 
+    //puts intake up (not default pos)
     public Command deployIntakeNoRoller(){
         return Commands.runOnce(() -> this.stowIntake(), this);
     }
@@ -175,10 +178,25 @@ public class Intake extends SubsystemBase{
     //     );
     // }
 
+    //Puts intake down (default pos)
     public Command stowIntakeCommand(){
         return Commands.sequence(
             Commands.runOnce(() -> this.deployIntake(), this)
             // this.spinRollerCommand()
+        );
+    }
+
+    public Command runIntakeCommand(){
+        return Commands.sequence(
+            stowIntakeCommand(),
+            spinRollerCommand()
+        );
+    }
+
+    public Command intakeUpCommand(){
+        return Commands.sequence(
+            deployIntakeCommand(),
+            stopIntakeRollerCommand()
         );
     }
 

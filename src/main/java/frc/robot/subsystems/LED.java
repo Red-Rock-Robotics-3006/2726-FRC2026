@@ -7,11 +7,15 @@ import javax.lang.model.util.ElementScanner14;
 import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.LEDPattern;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.Tank.RobotState;
+import redrocklib.wrappers.logging.SmartDashboardNumber;
 
 public class LED extends SubsystemBase{
 
@@ -21,9 +25,9 @@ public class LED extends SubsystemBase{
     private Shooter shooter = Shooter.getInstance();
     private Tank tank = Tank.getInstance();
 
-    private AddressableLED control = new AddressableLED(0);//TODO FILLER
+    private AddressableLED control = new AddressableLED(9);//TODO FILLER
 
-    private AddressableLEDBuffer buffer = new AddressableLEDBuffer(64);//TODO FILLER
+    private AddressableLEDBuffer buffer = new AddressableLEDBuffer(69);//TODO FILLER
 
     private final Color WHITE = new Color(255, 255, 255);
     private final Color GREEN = new Color(0, 255, 0);
@@ -35,9 +39,12 @@ public class LED extends SubsystemBase{
     
     private LED(){
         super("LED");
+        
         AutoLogOutputManager.addObject(this);
         control.setLength(buffer.getLength());
         control.setColorOrder(AddressableLED.ColorOrder.kRGB);
+        control.setData(buffer);
+        control.start();
     }
 
     public void setLights(Color color){
@@ -65,39 +72,46 @@ public class LED extends SubsystemBase{
 
     public void setLEDTankDisable(){
         ORANGE_BLINK.applyTo(this.buffer);
+        SmartDashboard.putString("LED-Color/Color", ORANGE_BLINK.toString());
         Logger.recordOutput("LED/Status", "ORANGE_BLINK");
     }
     
     public void setLEDDisable(){
         this.setLights(RED);
+        SmartDashboard.putString("LED-Color/Color", RED.toHexString());
         Logger.recordOutput("LED/Status", "RED");
     }
     
     public void setLEDShooting(){
         this.setLights(BLUE);
+        SmartDashboard.putString("LED-Color/Color", BLUE.toHexString());
         Logger.recordOutput("LED/Status", "BLUE");
     }
     
     public void setLEDAtAngle(){
         this.setLights(GREEN);
+        SmartDashboard.putString("LED-Color/Color", GREEN.toHexString());
         Logger.recordOutput("LED/Status", "GREEN");
     }
     
     public void setLEDIntaking(){
-        this.setLights(WHITE);
+        this.setLights(ORANGE);
+        SmartDashboard.putString("LED-Color/Color", ORANGE.toHexString());
         Logger.recordOutput("LED/Status", "WHITE");
     }
     
     public void setLEDAutoAiming(){
         WHITE_BLINK.applyTo(this.buffer);
+        SmartDashboard.putString("LED-Color/Color", WHITE.toHexString());
         Logger.recordOutput("LED/Status", "WHITE_BLINK");
     }
 
     @Override
     public void periodic(){
         if(this.tank.isAtAngle()) this.setLEDAtAngle();
-        else if(this.shooter.isAtShooterSpeed()) this.setLEDShooting();
-        else if(this.intake.isIntaking()) this.setLEDIntaking();
+        else if(this.tank.getState() == RobotState.AutoAlign) this.setLEDAutoAiming();
+        else if(this.shooter.shooterShooting()) this.setLEDShooting();
+        else if(this.intake.isIntaking) this.setLEDIntaking();
         else this.setLEDDisable();
 
         this.control.setData(buffer);

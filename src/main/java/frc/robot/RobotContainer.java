@@ -4,8 +4,16 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.swerve.utility.WheelForceCalculator.Feedforwards;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPLTVController;
+
 import choreo.Choreo;
 import choreo.auto.AutoFactory;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -33,12 +41,25 @@ public class RobotContainer {
   private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
   public RobotContainer() {
+    NamedCommands.registerCommand("runIntake", intake.runIntakeCommand());
+    NamedCommands.registerCommand("intakeUp", intake.intakeUpCommand());
+    NamedCommands.registerCommand("autoShoot", shooter.autoAimShootCommand());
+    NamedCommands.registerCommand("hubShoot", shooter.shootCommandHub());
+    NamedCommands.registerCommand("lobShoot", shooter.shootLobCommand());
+    NamedCommands.registerCommand("zeroIntake", intake.resetIntakeCommand());
+    NamedCommands.registerCommand("wait3Seconds", shooter.wait3SecondsCommands());
+
     configureBindings();
     configureSelector();
   }
 
   private void configureBindings() {
-    
+    // RobotConfig config;
+    // try{
+    //   config = RobotConfig.fromGUISettings();
+    // }catch (Exception exception){
+    //   exception.printStackTrace();
+    // }
     // driveStick.leftBumper()
     //   .onTrue(shooter.autoAimShootCommand())
     //   .onFalse(shooter.stopShooterCommand());
@@ -92,33 +113,31 @@ public class RobotContainer {
     // driveStick.leftBumper()
     //   .onTrue(Commands.runOnce(() -> tank.setSlowActive(true)))
     //   .onFalse(Commands.runOnce(() -> tank.setSlowActive(false)));
+
+    AutoBuilder.configure(
+      () -> tank.getRobotPose(),
+      (Pose2d pos) -> tank.resetPos(pos),
+      () -> tank.getRobotChassisSpeeds(), 
+      (speeds, feedforwards) -> tank.driveRobotRelative(speeds), 
+      new PPLTVController(0.02), 
+      tank.getRobotConfig(), 
+      () -> {
+        if(DriverStation.getAlliance().isPresent())
+          return DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
+        return false;
+      }, 
+      tank
+    );
     
   }
-  // public void configureBindings(){
-    //   driveStick.a()
-    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDAtAngle(), ledTest));
-    //   driveStick.b()
-    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDTankDisable(), ledTest));
-    //   driveStick.rightTrigger(.25)
-    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDDisable(), ledTest));
-    //   driveStick.y()
-    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDAutoAiming(), ledTest));
-    //   driveStick.x()
-    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDShooting(), ledTest));
-    //   driveStick.leftTrigger(.25)
-    //   .onTrue(Commands.runOnce(() -> ledTest.setLEDIntaking(), ledTest));
-    // }
     
   public static void setRumble(double value){
     driveStick.setRumble(RumbleType.kBothRumble, value);
   }
   
   private void configureSelector(){
+    autoChooser = AutoBuilder.buildAutoChooser("No auto");
     SmartDashboard.putData("Auto/Selector", autoChooser);
-    autoChooser.setDefaultOption("No auto", Commands.print("No auto"));
-    
-    autoChooser.addOption("awayHubPreload", Autos.awayHubPreload());
-    autoChooser.addOption("hubPreload", Autos.hubPreload());
   }
   
   public Command getAutonomousCommand() {

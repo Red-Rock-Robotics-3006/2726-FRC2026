@@ -4,6 +4,7 @@ import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.Utils;
+import com.pathplanner.lib.config.RobotConfig;
 import com.revrobotics.PersistMode;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -18,8 +19,11 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -49,6 +53,8 @@ public class Tank extends SubsystemBase{
     
     private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.8);
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
+    private SmartDashboardNumber maxDriveMperS = new SmartDashboardNumber("Tank/max-drive-m/s", 2.0);
+    private SmartDashboardNumber maxTurnMperS = new SmartDashboardNumber("Tank/max-turn-m/s", 2.0);
     private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.02); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0.003); //TODO
@@ -64,14 +70,16 @@ public class Tank extends SubsystemBase{
     private double[] limelightStDev = {0.7, 0.7, 0.8};
     private double[] encoderStDev = {0.5, 0.5, 0.7};
     private double[] visionStDev = {0.2, 0.2, 0.5};
-    private DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(22.5);
     private double trackWidth = 22.0;
+    private double wheelRadius = 3;
+    private DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(Units.inchesToMeters(this.trackWidth));
+    // private DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(22.5);
     private boolean doRejectUpdate = false;
     private LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelightName);
     private final Field2d field = new Field2d();
     private final Field2d limelightPos = new Field2d();
     private DifferentialDrivePoseEstimator m_poseEstimator = new DifferentialDrivePoseEstimator(
-        m_kinematics, 
+        kinematics, 
         new Rotation2d(), 
         0.0, 
         0.0, 
@@ -83,12 +91,12 @@ public class Tank extends SubsystemBase{
     private boolean autoAlignActive = false;
     private boolean turnSlowActive = false;
     private SmartDashboardNumber slowTurnMax = new SmartDashboardNumber("Tank/slow-turn-speed-max", 0.3);
-    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 7);
+    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 3);
     private double distanceFromHub = 0.0;
     private double angleToTarget = 0.0;
     private double robotAngle = 0.0;
 
-    private enum RobotState{
+    public enum RobotState{
         AutoAlign, 
         Driving
     }
@@ -113,9 +121,15 @@ public class Tank extends SubsystemBase{
     private SmartDashboardNumber redLobHighX = new SmartDashboardNumber("Tank/Points/red-lob-high-x", 2.7);
     private SmartDashboardNumber redLobHighY = new SmartDashboardNumber("Tank/Points/red-lob-high-y", 6);
     
+    private RobotConfig config;
     
     private Tank(){
         super("Tank");
+        try{
+        config = RobotConfig.fromGUISettings();
+        }catch (Exception exception){
+        exception.printStackTrace();
+        }
         AutoLogOutputManager.addObject(this);
         alignPID.setTolerance(alignPIDTolerance.getNumber()); //5 degrees
 
@@ -129,6 +143,14 @@ public class Tank extends SubsystemBase{
         rightBack.configure(rightConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftFront.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftBack.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    }
+
+    public RobotConfig getRobotConfig(){
+        return this.config;
+    }
+
+    public RobotState getState(){
+        return this.state;
     }
 
     public void driveRaw(double drive, double turn){
@@ -299,6 +321,34 @@ public class Tank extends SubsystemBase{
         return Commands.runOnce(() -> this.state = RobotState.Driving, this);
     }
 
+    public void driveRobotRelative(ChassisSpeeds speeds){
+        double drive = speeds.vxMetersPerSecond/maxDriveMperS.getNumber();
+        double turn = speeds.omegaRadiansPerSecond/maxTurnMperS.getNumber();
+
+        this.drive(drive, turn);
+    }
+    //getVelocity() is in RPM so converts to m/s with RPM*wheelRadius*2pi/60
+    public ChassisSpeeds getRobotChassisSpeeds(){
+        DifferentialDriveWheelSpeeds wheelSpeeds = new DifferentialDriveWheelSpeeds(
+            leftFront.getEncoder().getVelocity()*Units.inchesToMeters(this.wheelRadius)*(2*Math.PI)/60, 
+            rightFront.getEncoder().getVelocity()*Units.inchesToMeters(this.wheelRadius)*(2*Math.PI)/60
+        );
+        
+        return kinematics.toChassisSpeeds(wheelSpeeds);
+    }
+
+    public void resetPos(Pose2d pos){
+        double rightMeters = rightFront.getEncoder().getPosition();
+        double leftMeters = leftFront.getEncoder().getPosition();
+        
+        m_poseEstimator.resetPosition(
+            new Rotation2d((rightMeters-leftMeters)/trackWidth), 
+            leftMeters,
+            rightMeters,
+            pos
+        );
+    }
+
     //updates poseEstimator, then checks if april tag is present, if so it updates poseEstimator with vision data
     public void updateOdometry(){
         double rightMeters = rightFront.getEncoder().getPosition();
@@ -332,7 +382,7 @@ public class Tank extends SubsystemBase{
         Logger.recordOutput("Limelight/" + limelightName+ "/seesAprilTag", mt1.tagCount > 0);
         Logger.recordOutput("Limelight/" + limelightName + "/isAccepted", !doRejectUpdate);
         SmartDashboard.putBoolean("Limelight/" + limelightName + "/isAccepted", !doRejectUpdate);
-}
+    }
 
     @Override
     public void periodic(){
