@@ -53,11 +53,11 @@ public class Shooter extends SubsystemBase{
     private SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
 
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
-        Map.entry(2.206, 2800.0), 
-        Map.entry(2.436, 2900.0), 
-        Map.entry(2.655, 3000.0), 
-        Map.entry(2.973, 3200.0), 
-        Map.entry(3.44, 3330.0),
+        Map.entry(2.206, 2815.0), 
+        Map.entry(2.436, 2915.0), 
+        Map.entry(2.655, 3030.0), 
+        Map.entry(2.973, 3216.0), 
+        Map.entry(3.44, 3340.0),
         Map.entry(3.85, 3470.0),
         Map.entry(4.22, 3580.0),
         Map.entry(4.81, 3720.0),
@@ -79,8 +79,8 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
     private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
     private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", 10);
-    private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 0.5);
-
+    private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 0.7);
+    private boolean isShooting = false;
     private boolean autoShootActive = false;
     private SmartDashboardNumber shooterSpeedThreshold = new SmartDashboardNumber("Shooter/shooter-speed-threshold", 10);
     private Shooter(){
@@ -156,11 +156,16 @@ public class Shooter extends SubsystemBase{
         indexMotor.configure(indexConfig, com.revrobotics.ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
+    public boolean shooterShooting(){
+        return this.isShooting;
+    }
+
     private void setShooterSpeedRPM(double RPM){
         this.shooterMotor1.motor.setControl(new VelocityVoltage(RPM/60).withSlot(0).withOverrideBrakeDurNeutral(true));
         this.shooterMotor2.motor.setControl(new VelocityVoltage(RPM/60).withSlot(0).withOverrideBrakeDurNeutral(true));
         SmartDashboard.putNumber("Shooter/rpm", RPM);
         this.targetRPM = RPM;
+        this.isShooting =targetRPM>0;
         Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", RPM );
         Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", RPM );
     }
@@ -170,6 +175,7 @@ public class Shooter extends SubsystemBase{
         this.shooterMotor2.motor.setControl(new CoastOut());
         Logger.recordOutput("Shooter/shooterMotor1TargetVelocity", 0 );
         Logger.recordOutput("Shooter/shooterMotor2TargetVelocity", 0 );
+        this.isShooting = false;
     }
 
     private void setIndexSpeed(){
@@ -202,6 +208,10 @@ public class Shooter extends SubsystemBase{
 
     public boolean isAtAwayHubShooterSpeed(){ //Checks if shooter is up to speed
         return isAtShooterSpeed.getValue(); //getVelocity() is in RPS so convert to RPM
+    }
+
+    public Command wait3SecondsCommands(){
+        return Commands.waitSeconds(3);
     }
 
     public Command autoAimShootCommand(){ //auto aligns tank and shoots
@@ -262,7 +272,7 @@ public class Shooter extends SubsystemBase{
 
     public Command shootLobCommand(){
          return Commands.sequence(
-            Commands.runOnce(() -> this.setShooterSpeedRPM(this.lobShooterSpeed.getNumber()), this),
+            Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.lobShooterSpeed.getNumber()), this),
             Commands.waitUntil(() -> this.isAtShooterSpeed()),
             // Commands.waitSeconds(this.speedUpSecLob.getNumber()),
             Commands.runOnce(() -> this.setIndexSpeed(), this)

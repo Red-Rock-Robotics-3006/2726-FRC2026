@@ -7,13 +7,25 @@
         {
           "type": "named",
           "data": {
-            "name": "Shoot"
+            "name": "zeroIntake"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": null
+            "name": "runIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Test 1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "autoShoot"
           }
         }
       ]
