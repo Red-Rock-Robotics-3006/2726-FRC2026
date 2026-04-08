@@ -6,9 +6,12 @@ import org.littletonrobotics.junction.Logger;
 import com.ctre.phoenix6.Utils;
 import com.pathplanner.lib.config.RobotConfig;
 import com.revrobotics.PersistMode;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
@@ -45,6 +48,12 @@ public class Tank extends SubsystemBase{
     private SparkMax leftFront = new SparkMax(12, MotorType.kBrushed);
     private SparkMax leftBack = new SparkMax(14, MotorType.kBrushed);
 
+    private SparkClosedLoopController rightFrontController = rightFront.getClosedLoopController();
+    private SparkClosedLoopController leftFrontController = rightFront.getClosedLoopController();
+
+    private final RelativeEncoder leftEncoder;
+    private final RelativeEncoder rightEncoder;
+
     private String limelightName = "limelight";
     private double limelightHeight = 0; //TODO vertical height off ground inch
     private double limelight = 90; //TODO angle of limelight degrees from vertical
@@ -53,8 +62,8 @@ public class Tank extends SubsystemBase{
     
     private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.8);
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
-    private SmartDashboardNumber maxDriveMperS = new SmartDashboardNumber("Tank/max-drive-m/s", 2.0);
-    private SmartDashboardNumber maxTurnMperS = new SmartDashboardNumber("Tank/max-turn-m/s", 2.0);
+    private SmartDashboardNumber maxDriveMperS = new SmartDashboardNumber("Tank/max-drive-m/s", 0.2);
+    private SmartDashboardNumber maxTurnMperS = new SmartDashboardNumber("Tank/max-turn-m/s", 0.2);
     private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.02); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0.003); //TODO
@@ -70,7 +79,7 @@ public class Tank extends SubsystemBase{
     private double[] limelightStDev = {0.7, 0.7, 0.8};
     private double[] encoderStDev = {0.5, 0.5, 0.7};
     private double[] visionStDev = {0.2, 0.2, 0.5};
-    private double trackWidth = 22.0;
+    private double trackWidth = 22.66666667;
     private double wheelRadius = 3;
     private DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(Units.inchesToMeters(this.trackWidth));
     // private DifferentialDriveKinematics kinematics = new DifferentialDriveKinematics(22.5);
@@ -135,6 +144,9 @@ public class Tank extends SubsystemBase{
 
         SparkMaxConfig rightConfig = new SparkMaxConfig();
         SparkMaxConfig leftConfig = new SparkMaxConfig();
+
+        rightEncoder = rightFront.getEncoder();
+        leftEncoder = leftFront.getEncoder();
 
         rightConfig.idleMode(IdleMode.kBrake).inverted(false);
         leftConfig.idleMode(IdleMode.kBrake).inverted(false);
@@ -322,17 +334,30 @@ public class Tank extends SubsystemBase{
     }
 
     public void driveRobotRelative(ChassisSpeeds speeds){
-        double drive = speeds.vxMetersPerSecond/maxDriveMperS.getNumber();
-        double turn = speeds.omegaRadiansPerSecond/maxTurnMperS.getNumber();
+        DifferentialDriveWheelSpeeds wheelSpeeds = kinematics.toWheelSpeeds(speeds);
+        leftFrontController.setSetpoint(wheelSpeeds.leftMetersPerSecond, ControlType.kVelocity);
+        rightFrontController.setSetpoint(wheelSpeeds.rightMetersPerSecond, ControlType.kVelocity);
+        SmartDashboard.putNumber("Tank/left-speed", wheelSpeeds.leftMetersPerSecond);
+        SmartDashboard.putNumber("Tank/right-speed", wheelSpeeds.rightMetersPerSecond);
+        // double drive = speeds.vxMetersPerSecond/maxDriveMperS.getNumber();
+        // double turn = speeds.omegaRadiansPerSecond/maxTurnMperS.getNumber();
 
-        this.drive(drive, turn);
+        // this.drive(drive/1000, turn/1000);
     }
     //getVelocity() is in RPM so converts to m/s with RPM*wheelRadius*2pi/60
     public ChassisSpeeds getRobotChassisSpeeds(){
+        double leftVelocity = leftEncoder.getVelocity()*Units.inchesToMeters(this.wheelRadius)*(2*Math.PI)/60;
+        double rightVelocity = rightEncoder.getVelocity()*Units.inchesToMeters(this.wheelRadius)*(2*Math.PI)/60;
+
         DifferentialDriveWheelSpeeds wheelSpeeds = new DifferentialDriveWheelSpeeds(
-            leftFront.getEncoder().getVelocity()*Units.inchesToMeters(this.wheelRadius)*(2*Math.PI)/60, 
-            rightFront.getEncoder().getVelocity()*Units.inchesToMeters(this.wheelRadius)*(2*Math.PI)/60
+            leftVelocity, 
+            rightVelocity
         );
+
+        SmartDashboard.putNumber("Tank/left-velocity", leftVelocity);
+        SmartDashboard.putNumber("Tank/left-encoder-velocity", leftEncoder.getVelocity());
+        SmartDashboard.putNumber("Tank/right-velocity", rightVelocity);
+        SmartDashboard.putNumber("Tank/right-encoder-velocity", rightEncoder.getVelocity());
         
         return kinematics.toChassisSpeeds(wheelSpeeds);
     }
@@ -403,6 +428,8 @@ public class Tank extends SubsystemBase{
         SmartDashboard.putNumber("Tank/angle-to-target", angleToTarget);
         SmartDashboard.putNumber("Tank/current-robot-angle", robotAngle);
         SmartDashboard.putData("Limelight/limelight-pos", limelightPos);
+
+        SmartDashboard.putNumber("Tank/robot-speed", getRobotChassisSpeeds().vxMetersPerSecond);
 
         if(turnKp.hasChanged()
         || turnKi.hasChanged()
