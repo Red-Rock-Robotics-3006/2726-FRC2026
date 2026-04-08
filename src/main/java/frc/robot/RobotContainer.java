@@ -42,12 +42,14 @@ public class RobotContainer {
 
   public RobotContainer() {
     NamedCommands.registerCommand("runIntake", intake.runIntakeCommand());
+    NamedCommands.registerCommand("stopIntake", intake.stopIntakeRollerCommand());
     NamedCommands.registerCommand("intakeUp", intake.intakeUpCommand());
     NamedCommands.registerCommand("autoShoot", shooter.autoAimShootCommand());
     NamedCommands.registerCommand("hubShoot", shooter.shootCommandHub());
     NamedCommands.registerCommand("lobShoot", shooter.shootLobCommand());
     NamedCommands.registerCommand("zeroIntake", intake.resetIntakeCommand());
     NamedCommands.registerCommand("wait3Seconds", shooter.wait3SecondsCommands());
+    NamedCommands.registerCommand("stopShooter", shooter.stopShooterCommand());
 
     configureBindings();
     configureSelector();
@@ -114,20 +116,20 @@ public class RobotContainer {
     //   .onTrue(Commands.runOnce(() -> tank.setSlowActive(true)))
     //   .onFalse(Commands.runOnce(() -> tank.setSlowActive(false)));
 
-    AutoBuilder.configure(
-      () -> tank.getRobotPose(),
-      (Pose2d pos) -> tank.resetPos(pos),
-      () -> tank.getRobotChassisSpeeds(), 
-      (speeds, feedforwards) -> tank.driveRobotRelative(speeds), 
-      new PPLTVController(0.02), 
-      tank.getRobotConfig(), 
-      () -> {
-        if(DriverStation.getAlliance().isPresent())
-          return DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
-        return false;
-      }, 
-      tank
-    );
+    // AutoBuilder.configure(
+    //   () -> tank.getRobotPose(),
+    //   (Pose2d pos) -> tank.resetPos(pos),
+    //   () -> tank.getRobotChassisSpeeds(), 
+    //   (speeds, feedforwards) -> tank.driveRobotRelative(speeds), 
+    //   new PPLTVController(0.02), 
+    //   tank.getRobotConfig(), 
+    //   () -> {
+    //     if(DriverStation.getAlliance().isPresent())
+    //       return DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
+    //     return false;
+    //   }, 
+    //   tank
+    // );
     
   }
     
@@ -136,8 +138,16 @@ public class RobotContainer {
   }
   
   private void configureSelector(){
-    autoChooser = AutoBuilder.buildAutoChooser("No auto");
     SmartDashboard.putData("Auto/Selector", autoChooser);
+
+    autoChooser.setDefaultOption("No Auto", Commands.print("No Auto"));
+
+    autoChooser.addOption("goToMiddle", Autos.goToMiddle());
+    autoChooser.addOption("hubPreload", Autos.hubPreload());
+    autoChooser.addOption("awayHubPreload", Autos.awayHubPreload());
+    
+    // autoChooser = AutoBuilder.buildAutoChooser("No auto");
+    // SmartDashboard.putData("Auto/Selector", autoChooser);
   }
   
   public Command getAutonomousCommand() {
