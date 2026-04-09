@@ -66,10 +66,10 @@ public class Shooter extends SubsystemBase{
 
     private double targetRPM = 0.0;
 
-    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 1200); //TODO
-    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 1650); //TODO
-    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 1330); //TODO
-    private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", 1000); //TODO
+    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 3216); //TODO
+    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 5500); //TODO
+    private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 3200); //TODO
+    private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", -1000); //TODO
     private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
     private SmartDashboardNumber speedUpSecLob = new SmartDashboardNumber("Shooter/speed-up-seconds-lob", 0.7);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.5); //TODO
@@ -78,8 +78,8 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("Shooter/indexKd", 0); //TODO
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
     private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
-    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", 10);
-    private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 0.7);
+    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", 0);
+    private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 1);
     private boolean isShooting = false;
     private boolean autoShootActive = false;
     private SmartDashboardNumber shooterSpeedThreshold = new SmartDashboardNumber("Shooter/shooter-speed-threshold", 10);

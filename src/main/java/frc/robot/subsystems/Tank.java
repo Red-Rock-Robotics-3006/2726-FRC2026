@@ -104,12 +104,12 @@ public class Tank extends SubsystemBase{
     private double distanceFromHub = 0.0;
     private double angleToTarget = 0.0;
     private double robotAngle = 0.0;
-
+    
     public enum RobotState{
         AutoAlign, 
-        Driving
+        Driving,
+        Auto
     }
-
     private RobotState state = RobotState.Driving;
     
     private SmartDashboardNumber redHubX = new SmartDashboardNumber("Tank/Points/red-hub-x", 4.629);
@@ -117,6 +117,7 @@ public class Tank extends SubsystemBase{
 
     private SmartDashboardNumber blueHubX = new SmartDashboardNumber("Tank/Points/blue-hub-x", 11.92);
     private SmartDashboardNumber blueHubY = new SmartDashboardNumber("Tank/Points/blue-hub-y", 4.033);
+
 
     private SmartDashboardNumber blueLobLowX = new SmartDashboardNumber("Tank/Points/blue-lob-low-x", 14);
     private SmartDashboardNumber blueLobLowY = new SmartDashboardNumber("Tank/Points/blue-lob-low-y", 1.9);
@@ -163,6 +164,14 @@ public class Tank extends SubsystemBase{
 
     public RobotState getState(){
         return this.state;
+    }
+
+    public void setStateAuto(){
+        this.state = RobotState.Auto;
+    }
+
+    public void setStateDriving(){
+        this.state = RobotState.Driving;
     }
 
     public void driveRaw(double drive, double turn){
@@ -416,6 +425,9 @@ public class Tank extends SubsystemBase{
         else if(state == RobotState.AutoAlign && !this.isAtAngle()){
             this.turnToAngle();
             //RobotContainer.setRumble(this.isAtAngle()? 0.25: 0.0);
+        }
+        else if(state == RobotState.Auto){
+            
         }
 
         updateOdometry();

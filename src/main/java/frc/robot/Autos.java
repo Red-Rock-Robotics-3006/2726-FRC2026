@@ -14,11 +14,11 @@ public class Autos {
     private static Tank tank = Tank.getInstance();
 
     private static SmartDashboardNumber shootSeconds = new SmartDashboardNumber("autos/shooter-seconds", 8);
-    private static SmartDashboardNumber autoDriveSpeed = new SmartDashboardNumber("Autos/auto-drive-speed", 0.3);
-    private static SmartDashboardNumber autoTurnSpeed = new SmartDashboardNumber("Autos/auto-turn-speed", 0.3);
-    private static SmartDashboardNumber turnSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 1);
-    private static SmartDashboardNumber driveSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 3);
-    private static SmartDashboardNumber preloadSeconds = new SmartDashboardNumber("Autos/preload-wiat-seconds", 5);
+    private static SmartDashboardNumber autoDriveSpeed = new SmartDashboardNumber("Autos/auto-drive-speed", 0.65);
+    private static SmartDashboardNumber autoTurnSpeed = new SmartDashboardNumber("Autos/auto-turn-speed", -0.7);
+    private static SmartDashboardNumber turnSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 1.2);
+    private static SmartDashboardNumber driveSeconds = new SmartDashboardNumber("Autos/auto-drive-seconds", 3);
+    private static SmartDashboardNumber preloadSeconds = new SmartDashboardNumber("Autos/preload-wiat-seconds", 1);
 
     public static Command awayHubPreload(){
         return Commands.sequence(
@@ -38,16 +38,35 @@ public class Autos {
 
     public static Command goToMiddle(){
         return Commands.sequence(
+            // Commands.runOnce(() -> tank.setStateAuto()),
+            // Commands.runOnce(() -> tank.drive(0, autoTurnSpeed.getNumber()), tank),
+            // Commands.waitSeconds(turnSeconds.getNumber()),
+            // Commands.runOnce(() -> tank.drive(0,0), tank)
             shooter.autoAimShootCommand(),
+            // shooter.shootCommandHub(),
             Commands.waitSeconds(preloadSeconds.getNumber()),
             shooter.stopShooterCommand(),
             intake.resetIntakeCommand(),
-            intake.runIntakeCommand(),
-            Commands.runOnce(() -> tank.drive(autoTurnSpeed.getNumber(), 0), tank),
-            Commands.waitSeconds(turnSeconds.getNumber()),
-            Commands.runOnce(() -> tank.drive(0, autoDriveSpeed.getNumber()), tank),
-            Commands.waitSeconds(driveSeconds.getNumber()),
-            Commands.runOnce(() -> tank.drive(0,0), tank)
+            Commands.parallel(
+                Commands.sequence(
+                    intake.runIntakeCommand(),
+                    Commands.waitSeconds(10),
+                    intake.stopIntakeRollerCommand()
+                ),
+                Commands.sequence(
+                    Commands.runOnce(() -> tank.drive(0, autoTurnSpeed.getNumber()), tank),
+                    Commands.waitSeconds(turnSeconds.getNumber()),
+                    Commands.runOnce(() -> tank.drive(0,0), tank),
+                    Commands.runOnce(() -> tank.drive(autoDriveSpeed.getNumber(), 0), tank),
+                    Commands.waitSeconds(driveSeconds.getNumber()),
+                    Commands.runOnce(() -> tank.drive(0,0), tank)
+                )
+            ),
+            // intake.runIntakeCommand(),
+            // Commands.runOnce(() -> tank.drive(autoTurnSpeed.getNumber(), 0), tank),
+            // Commands.waitSeconds(turnSeconds.getNumber()),
+            // Commands.runOnce(() -> tank.drive(0,0), tank)
+            Commands.runOnce(() -> tank.setStateDriving())
         );
     }
 }
