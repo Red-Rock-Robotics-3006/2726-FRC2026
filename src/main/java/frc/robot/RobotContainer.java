@@ -73,9 +73,9 @@ public class RobotContainer {
       .onTrue(shooter.autoShootCommand())
       .onFalse(shooter.stopShooterCommand());
 
-    driveStick.leftTrigger(0.25)
-      .onTrue(shooter.shootLobCommand())
-      .onFalse(shooter.stopShooterCommand());
+    // driveStick.leftTrigger(0.25)
+    //   .onTrue(shooter.shootLobCommand())
+    //   .onFalse(shooter.stopShooterCommand());
 
     driveStick.leftBumper()
       .onTrue(tank.turnToAngleCommand())

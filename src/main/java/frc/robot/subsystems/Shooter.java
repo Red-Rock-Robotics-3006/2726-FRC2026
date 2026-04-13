@@ -78,7 +78,7 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("Shooter/indexKd", 0); //TODO
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
     private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
-    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", 0);
+    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", -5);
     private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 1);
     private boolean isShooting = false;
     private boolean autoShootActive = false;
@@ -197,7 +197,7 @@ public class Shooter extends SubsystemBase{
     }
 
     private double getShooterSpeed(double distance){
-        return this.table.get(distance) - this.lerpOffset.getNumber();
+        return this.table.get(distance) + this.lerpOffset.getNumber();
     }
 
     public boolean isAtShooterSpeed(){ //Checks if shooter is up to speed

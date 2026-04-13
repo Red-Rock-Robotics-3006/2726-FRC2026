@@ -15,9 +15,9 @@ public class Autos {
 
     private static SmartDashboardNumber shootSeconds = new SmartDashboardNumber("autos/shooter-seconds", 8);
     private static SmartDashboardNumber autoDriveSpeed = new SmartDashboardNumber("Autos/auto-drive-speed", 0.65);
-    private static SmartDashboardNumber autoTurnSpeed = new SmartDashboardNumber("Autos/auto-turn-speed", -0.7);
-    private static SmartDashboardNumber turnSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 1.2);
-    private static SmartDashboardNumber driveSeconds = new SmartDashboardNumber("Autos/auto-drive-seconds", 3);
+    private static SmartDashboardNumber autoTurnSpeed = new SmartDashboardNumber("Autos/auto-turn-speed", 0.7);
+    private static SmartDashboardNumber turnSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 2);
+    private static SmartDashboardNumber driveSeconds = new SmartDashboardNumber("Autos/auto-drive-seconds", 3.5);
     private static SmartDashboardNumber preloadSeconds = new SmartDashboardNumber("Autos/preload-wiat-seconds", 1);
 
     public static Command awayHubPreload(){
@@ -38,11 +38,11 @@ public class Autos {
 
     public static Command goToMiddle(){
         return Commands.sequence(
-            // Commands.runOnce(() -> tank.setStateAuto()),
+            Commands.runOnce(() -> tank.setStateAuto()),
             // Commands.runOnce(() -> tank.drive(0, autoTurnSpeed.getNumber()), tank),
             // Commands.waitSeconds(turnSeconds.getNumber()),
             // Commands.runOnce(() -> tank.drive(0,0), tank)
-            shooter.autoAimShootCommand(),
+            shooter.autoShootCommand(),
             // shooter.shootCommandHub(),
             Commands.waitSeconds(preloadSeconds.getNumber()),
             shooter.stopShooterCommand(),

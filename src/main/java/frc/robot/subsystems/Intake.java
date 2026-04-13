@@ -49,7 +49,7 @@ public class Intake extends SubsystemBase{
     public boolean isIntaking = false;
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
-    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.45);
+    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.57);
 
     SparkFlexConfig hingeConfig = new SparkFlexConfig();
     SparkFlexConfig rollerConfig = new SparkFlexConfig();
