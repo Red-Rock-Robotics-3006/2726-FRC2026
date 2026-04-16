@@ -53,15 +53,11 @@ public class Shooter extends SubsystemBase{
     private SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
 
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
-        Map.entry(2.206, 2815.0), 
-        Map.entry(2.436, 2915.0), 
-        Map.entry(2.655, 3030.0), 
-        Map.entry(2.973, 3216.0), 
-        Map.entry(3.44, 3340.0),
-        Map.entry(3.85, 3470.0),
-        Map.entry(4.22, 3580.0),
-        Map.entry(4.81, 3720.0),
-        Map.entry(5.2, 3870.0)
+        Map.entry(2.61, 3270.0), 
+        Map.entry(3.0, 3020.0), 
+        Map.entry(3.52, 3270.0), 
+        Map.entry(4.15, 3590.0), 
+        Map.entry(4.74, 3970.0)
     ); 
 
     private double targetRPM = 0.0;
@@ -72,14 +68,14 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", -1000); //TODO
     private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
     private SmartDashboardNumber speedUpSecLob = new SmartDashboardNumber("Shooter/speed-up-seconds-lob", 0.7);
-    private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.5); //TODO
+    private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.3); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("Shooter/indexKp", 0.5); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("Shooter/indexKi", 0); //TODO
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("Shooter/indexKd", 0); //TODO
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
     private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
-    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", -5);
-    private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 1);
+    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", -400);
+    private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 1.5);
     private boolean isShooting = false;
     private boolean autoShootActive = false;
     private SmartDashboardNumber shooterSpeedThreshold = new SmartDashboardNumber("Shooter/shooter-speed-threshold", 10);
@@ -222,8 +218,11 @@ public class Shooter extends SubsystemBase{
     }
 
     public Command autoShootCommand(){
+        double shooterSpeed = (int)this.getShooterSpeed(tank.distanceFromHub());
+        SmartDashboard.putString("Stopped Shooter", "NO");
+        SmartDashboard.putNumber("Shooter/Shooter-target-speed", shooterSpeed);
         return Commands.sequence(
-            Commands.runOnce(() ->  this.setShooterSpeedRPM((int)this.getShooterSpeed(tank.distanceFromHub())), this),
+            Commands.runOnce(() ->  this.setShooterSpeedRPM(shooterSpeed), this),
             Commands.waitUntil(() -> this.isAtShooterSpeed()),
             Commands.waitSeconds(this.shooterWaitSeconds.getNumber()),
             Commands.runOnce(() -> this.setIndexSpeed())
@@ -232,6 +231,7 @@ public class Shooter extends SubsystemBase{
     }
 
     public Command stopShooterCommand(){
+        SmartDashboard.putString("Stopped Shooter", "YES");
         return Commands.sequence(
             Commands.runOnce(() -> this.autoShootActive = false),
             Commands.runOnce(() -> this.stopShooter(), this),

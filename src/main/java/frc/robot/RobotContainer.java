@@ -73,9 +73,9 @@ public class RobotContainer {
       .onTrue(shooter.autoShootCommand())
       .onFalse(shooter.stopShooterCommand());
 
-    // driveStick.leftTrigger(0.25)
-    //   .onTrue(shooter.shootLobCommand())
-    //   .onFalse(shooter.stopShooterCommand());
+    driveStick.leftTrigger(0.25)
+      .onTrue(shooter.shootLobCommand())
+      .onFalse(shooter.stopShooterCommand());
 
     driveStick.leftBumper()
       .onTrue(tank.turnToAngleCommand())
@@ -145,6 +145,7 @@ public class RobotContainer {
     autoChooser.addOption("goToMiddle", Autos.goToMiddle());
     autoChooser.addOption("hubPreload", Autos.hubPreload());
     autoChooser.addOption("awayHubPreload", Autos.awayHubPreload());
+    autoChooser.addOption("depotShoot", Autos.depotShoot());
     
     // autoChooser = AutoBuilder.buildAutoChooser("No auto");
     // SmartDashboard.putData("Auto/Selector", autoChooser);
