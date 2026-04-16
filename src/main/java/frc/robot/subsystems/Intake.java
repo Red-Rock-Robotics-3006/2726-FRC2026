@@ -44,12 +44,12 @@ public class Intake extends SubsystemBase{
     
     SmartDashboardNumber intakeSpeed = new SmartDashboardNumber("Intake/intakeSpeed",-0.1);
     SmartDashboardNumber rollerSpeedBack = new SmartDashboardNumber("Intake/backSpeed",0.3);
-    SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", -10.433);
+    SmartDashboardNumber deployPos = new SmartDashboardNumber("Intake/deployPos", -11.7);
     SmartDashboardNumber stowPos = new SmartDashboardNumber("Intake/stowPos", 0);
     public boolean isIntaking = false;
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
-    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.45);
+    SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.57);
 
     SparkFlexConfig hingeConfig = new SparkFlexConfig();
     SparkFlexConfig rollerConfig = new SparkFlexConfig();
