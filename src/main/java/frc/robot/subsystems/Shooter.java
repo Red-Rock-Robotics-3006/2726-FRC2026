@@ -52,18 +52,38 @@ public class Shooter extends SubsystemBase{
     private SparkFlexConfig indexConfig = new SparkFlexConfig();
     private SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
 
+    private SmartDashboardNumber lerp1_6 = new SmartDashboardNumber("Shooter-lerp-1.6", 2500.0);
+    private SmartDashboardNumber lerp2_0 = new SmartDashboardNumber("Shooter-lerp-2.0", 2600.0);
+    private SmartDashboardNumber lerp2_11 = new SmartDashboardNumber("Shooter-lerp-2.11", 2700.0);
+    private SmartDashboardNumber lerp2_61 = new SmartDashboardNumber("Shooter-lerp-2.61", 2780.0); //good
+    private SmartDashboardNumber lerp3_0 = new SmartDashboardNumber("Shooter-lerp-3.0", 2875.0);
+    private SmartDashboardNumber lerp3_52 = new SmartDashboardNumber("Shooter-lerp-3.52", 2980.0);
+    private SmartDashboardNumber lerp4_15 = new SmartDashboardNumber("Shooter-lerp-4.15", 3060.0);
+    private SmartDashboardNumber lerp4_74 = new SmartDashboardNumber("Shooter-lerp-4.74", 3160.0);
+
+    // private SmartDashboardNumber lerp2_0 = new SmartDashboardNumber("Shooter-lerp-2.0", 2600.0);
+    // private SmartDashboardNumber lerp2_11 = new SmartDashboardNumber("Shooter-lerp-2.11", 2700.0);
+    // private SmartDashboardNumber lerp2_61 = new SmartDashboardNumber("Shooter-lerp-2.61", 2780.0); //good
+    // private SmartDashboardNumber lerp3_0 = new SmartDashboardNumber("Shooter-lerp-3.0", 2945.0);
+    // private SmartDashboardNumber lerp3_52 = new SmartDashboardNumber("Shooter-lerp-3.52", 3060.0);
+    // private SmartDashboardNumber lerp4_15 = new SmartDashboardNumber("Shooter-lerp-4.15", 3160.0);
+    // private SmartDashboardNumber lerp4_74 = new SmartDashboardNumber("Shooter-lerp-4.74", 3280.0);
+
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
-        Map.entry(2.61, 3270.0), 
-        Map.entry(3.0, 3020.0), 
-        Map.entry(3.52, 3270.0), 
-        Map.entry(4.15, 3590.0), 
-        Map.entry(4.74, 3970.0)
+        Map.entry(1.6, lerp1_6.getNumber()), 
+        Map.entry(2.0, lerp2_0.getNumber()), 
+        Map.entry(2.11, lerp2_11.getNumber()), 
+        Map.entry(2.61, lerp2_61.getNumber()), 
+        Map.entry(3.0, lerp3_0.getNumber()), 
+        Map.entry(3.52, lerp3_52.getNumber()), 
+        Map.entry(4.15, lerp4_15.getNumber()), 
+        Map.entry(4.74, lerp4_74.getNumber())
     ); 
 
     private double targetRPM = 0.0;
 
     private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 3216); //TODO
-    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 5500); //TODO
+    private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 3500); //TODO
     private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 3200); //TODO
     private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", -1000); //TODO
     private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
@@ -74,7 +94,7 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("Shooter/indexKd", 0); //TODO
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
     private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
-    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", -400);
+    private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", 0);
     private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 1.5);
     private boolean isShooting = false;
     private boolean autoShootActive = false;

@@ -20,8 +20,9 @@ public class Autos {
     private static SmartDashboardNumber turnSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 0.4);
     private static SmartDashboardNumber driveSeconds = new SmartDashboardNumber("Autos/auto-drive-seconds", 3.5);
     private static SmartDashboardNumber driveSecondsDepot = new SmartDashboardNumber("Autos/auto-drive-seconds", 3.5);
-    private static SmartDashboardNumber preloadSeconds = new SmartDashboardNumber("Autos/preload-wiat-seconds", 1);
+    private static SmartDashboardNumber preloadSeconds = new SmartDashboardNumber("Autos/preload-wiat-seconds", 7);
     private static SmartDashboardNumber depotShootSeconds = new SmartDashboardNumber("Autos/depot-shoot-seconds", 4);
+    private static SmartDashboardNumber waitSeconds = new SmartDashboardNumber("Autos/wait-seconds", 0);
 
     public static Command awayHubPreload(){
         return Commands.sequence(
@@ -41,6 +42,8 @@ public class Autos {
     //shoots preloads goes to middle and intakes
     public static Command goToMiddle(){
         return Commands.sequence(
+            Commands.runOnce(() -> tank.setStateAuto()),
+            intake.resetIntakeCommand(),
             Commands.runOnce(() -> tank.setStateAutoAlign()),
             tank.turnToAngleCommand(),
             Commands.waitUntil(() -> tank.isAtAngle()),
@@ -50,7 +53,7 @@ public class Autos {
             Commands.waitSeconds(preloadSeconds.getNumber()),
             shooter.stopShooterCommand(),
             Commands.runOnce(() -> tank.setStateAuto()),
-            intake.resetIntakeCommand(),
+            Commands.waitSeconds(waitSeconds.getNumber()),
             Commands.parallel(
                 Commands.sequence(
                     intake.runIntakeCommand(),
