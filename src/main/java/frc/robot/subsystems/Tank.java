@@ -64,10 +64,10 @@ public class Tank extends SubsystemBase{
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
     private SmartDashboardNumber maxDriveMperS = new SmartDashboardNumber("Tank/max-drive-m/s", 0.2);
     private SmartDashboardNumber maxTurnMperS = new SmartDashboardNumber("Tank/max-turn-m/s", 0.2);
-    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.02); //TODO
+    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.025); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0.003); //TODO
-    private SmartDashboardNumber turnKs = new SmartDashboardNumber("Tank/Ks", 0.2);
+    private SmartDashboardNumber turnKs = new SmartDashboardNumber("Tank/Ks", 0.35);
 
     private SmartDashboardNumber ambiguityThreshold = new SmartDashboardNumber("Limelight/ambiguity-threshold", 0.8);
     private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 5);
@@ -100,7 +100,7 @@ public class Tank extends SubsystemBase{
     private boolean autoAlignActive = false;
     private boolean turnSlowActive = false;
     private SmartDashboardNumber slowTurnMax = new SmartDashboardNumber("Tank/slow-turn-speed-max", 0.3);
-    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 3);
+    private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 2);
     private double distanceFromHub = 0.0;
     private double angleToTarget = 0.0;
     private double robotAngle = 0.0;
