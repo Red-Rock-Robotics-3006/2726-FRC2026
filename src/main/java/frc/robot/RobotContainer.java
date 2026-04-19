@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.subsystems.FieldTimer;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.LED;
 // import frc.robot.subsystems.LEDTest;
@@ -36,6 +37,7 @@ public class RobotContainer {
   private final Tank tank = Tank.getInstance();
   private final Shooter shooter = Shooter.getInstance();
   private final LED led = LED.getInstance();
+  FieldTimer timer = new FieldTimer();
   // private final LEDTest ledTest = LEDTest.getInstance();
 
   private SendableChooser<Command> autoChooser = new SendableChooser<>();
@@ -146,6 +148,7 @@ public class RobotContainer {
     autoChooser.addOption("hubPreload", Autos.hubPreload());
     autoChooser.addOption("awayHubPreload", Autos.awayHubPreload());
     autoChooser.addOption("depotShoot", Autos.depotShoot());
+    autoChooser.addOption("preloadsZeroIntake", Autos.preloadsZeroIntake());
     
     // autoChooser = AutoBuilder.buildAutoChooser("No auto");
     // SmartDashboard.putData("Auto/Selector", autoChooser);

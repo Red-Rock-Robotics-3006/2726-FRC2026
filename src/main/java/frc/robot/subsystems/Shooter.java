@@ -52,14 +52,14 @@ public class Shooter extends SubsystemBase{
     private SparkFlexConfig indexConfig = new SparkFlexConfig();
     private SparkClosedLoopController indexController = indexMotor.getClosedLoopController();
 
-    private SmartDashboardNumber lerp1_6 = new SmartDashboardNumber("Shooter-lerp-1.6", 2500.0);
-    private SmartDashboardNumber lerp2_0 = new SmartDashboardNumber("Shooter-lerp-2.0", 2600.0);
-    private SmartDashboardNumber lerp2_11 = new SmartDashboardNumber("Shooter-lerp-2.11", 2700.0);
-    private SmartDashboardNumber lerp2_61 = new SmartDashboardNumber("Shooter-lerp-2.61", 2780.0); //good
-    private SmartDashboardNumber lerp3_0 = new SmartDashboardNumber("Shooter-lerp-3.0", 2875.0);
+    private SmartDashboardNumber lerp1_6 = new SmartDashboardNumber("Shooter-lerp-1.6", 2350.0);
+    private SmartDashboardNumber lerp2_0 = new SmartDashboardNumber("Shooter-lerp-2.0", 2420.0);
+    private SmartDashboardNumber lerp2_11 = new SmartDashboardNumber("Shooter-lerp-2.11", 2500.0);
+    private SmartDashboardNumber lerp2_61 = new SmartDashboardNumber("Shooter-lerp-2.61", 2620.0); //good
+    private SmartDashboardNumber lerp3_0 = new SmartDashboardNumber("Shooter-lerp-3.0", 2730.0);
     private SmartDashboardNumber lerp3_52 = new SmartDashboardNumber("Shooter-lerp-3.52", 2980.0);
-    private SmartDashboardNumber lerp4_15 = new SmartDashboardNumber("Shooter-lerp-4.15", 3060.0);
-    private SmartDashboardNumber lerp4_74 = new SmartDashboardNumber("Shooter-lerp-4.74", 3160.0);
+    private SmartDashboardNumber lerp4_15 = new SmartDashboardNumber("Shooter-lerp-4.15", 3140.0);
+    private SmartDashboardNumber lerp4_74 = new SmartDashboardNumber("Shooter-lerp-4.74", 3200.0);
 
     // private SmartDashboardNumber lerp2_0 = new SmartDashboardNumber("Shooter-lerp-2.0", 2600.0);
     // private SmartDashboardNumber lerp2_11 = new SmartDashboardNumber("Shooter-lerp-2.11", 2700.0);
@@ -70,24 +70,37 @@ public class Shooter extends SubsystemBase{
     // private SmartDashboardNumber lerp4_74 = new SmartDashboardNumber("Shooter-lerp-4.74", 3280.0);
 
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
-        Map.entry(1.6, lerp1_6.getNumber()), 
-        Map.entry(2.0, lerp2_0.getNumber()), 
-        Map.entry(2.11, lerp2_11.getNumber()), 
-        Map.entry(2.61, lerp2_61.getNumber()), 
-        Map.entry(3.0, lerp3_0.getNumber()), 
-        Map.entry(3.52, lerp3_52.getNumber()), 
-        Map.entry(4.15, lerp4_15.getNumber()), 
-        Map.entry(4.74, lerp4_74.getNumber())
+        Map.entry(1.6, 2350.0), 
+        Map.entry(2.0, 2420.0), 
+        Map.entry(2.11, 2500.0), 
+        Map.entry(2.61, 2620.0), 
+        Map.entry(3.0, 2730.0), 
+        Map.entry(3.52, 2980.0), 
+        Map.entry(4.15, 3140.0), 
+        Map.entry(4.74, 3200.0)
     ); 
-
+    
+    // InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
+    //     Map.entry(1.6, lerp1_6.getNumber()), 
+    //     Map.entry(2.0, lerp2_0.getNumber()), 
+    //     Map.entry(2.11, lerp2_11.getNumber()), 
+    //     Map.entry(2.61, lerp2_61.getNumber()), 
+    //     Map.entry(3.0, lerp3_0.getNumber()), 
+    //     Map.entry(3.52, lerp3_52.getNumber()), 
+    //     Map.entry(4.15, lerp4_15.getNumber()), 
+    //     Map.entry(4.74, lerp4_74.getNumber())
+    // ); 
     private double targetRPM = 0.0;
 
     private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 3216); //TODO
     private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 3500); //TODO
+    private SmartDashboardNumber autonomousShootSpeed = new SmartDashboardNumber("Shooter/autonomous-shoot-speed", 3000); //TODO
+    private SmartDashboardNumber autonomousShootSpeedDepot = new SmartDashboardNumber("Shooter/autonomous-shoot-speed", 3807); //TODO
     private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 3200); //TODO
     private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", -1000); //TODO
     private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
     private SmartDashboardNumber speedUpSecLob = new SmartDashboardNumber("Shooter/speed-up-seconds-lob", 0.7);
+    private SmartDashboardNumber speedUpSecLobAuto = new SmartDashboardNumber("Shooter/speed-up-seconds-lob-auto", 2);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.3); //TODO
     private SmartDashboardNumber indexKp = new SmartDashboardNumber("Shooter/indexKp", 0.5); //TODO
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("Shooter/indexKi", 0); //TODO
@@ -213,6 +226,7 @@ public class Shooter extends SubsystemBase{
     }
 
     private double getShooterSpeed(double distance){
+        SmartDashboard.putNumber("Shooter/LERP value", this.table.get(distance)+this.lerpOffset.getNumber());
         return this.table.get(distance) + this.lerpOffset.getNumber();
     }
 
@@ -291,14 +305,31 @@ public class Shooter extends SubsystemBase{
     }
 
     public Command shootLobCommand(){
-         return Commands.sequence(
+        return Commands.sequence(
             Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.lobShooterSpeed.getNumber()), this),
             Commands.waitUntil(() -> this.isAtShooterSpeed()),
             // Commands.waitSeconds(this.speedUpSecLob.getNumber()),
             Commands.runOnce(() -> this.setIndexSpeed(), this)
-        ); 
+            ); 
+        }
+        
+    public Command shootAutonmousCommand(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.autonomousShootSpeed.getNumber()), this),
+            Commands.waitUntil(() -> this.isAtShooterSpeed()),
+            Commands.waitSeconds(this.speedUpSecLobAuto.getNumber()),
+            Commands.runOnce(() -> this.setIndexSpeed(), this)
+        );
     }
-
+    
+    public Command shootAutonmousCommandDepot(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.setShooterSpeedRPM((int)this.autonomousShootSpeedDepot.getNumber()), this),
+            Commands.waitUntil(() -> this.isAtShooterSpeed()),
+            Commands.waitSeconds(this.speedUpSecLobAuto.getNumber()),
+            Commands.runOnce(() -> this.setIndexSpeed(), this)
+        );
+    }
     public Command decideWhatShoot(){
         return tank.distanceFromHub()  <= shootCommandThreshold.getNumber()? shootCommandHub(): shootCommandAwayHub();
     }
