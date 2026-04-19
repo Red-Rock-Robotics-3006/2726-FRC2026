@@ -15,13 +15,14 @@ public class Autos {
 
     private static SmartDashboardNumber shootSeconds = new SmartDashboardNumber("autos/shooter-seconds", 8);
     private static SmartDashboardNumber autoDriveSpeed = new SmartDashboardNumber("Autos/auto-drive-speed", 0.7);
+    private static SmartDashboardNumber autoDriveSpeedDepot = new SmartDashboardNumber("Autos/auto-drive-speed", 0.7);
     private static SmartDashboardNumber autoDriveSpeedSlow = new SmartDashboardNumber("Autos/auto-drive-speed-slow", 0.5);
     private static SmartDashboardNumber autoTurnSpeed = new SmartDashboardNumber("Autos/auto-turn-speed", 0.8);
     private static SmartDashboardNumber turnSeconds = new SmartDashboardNumber("Autos/auto-turn-seconds", 0.4);
     private static SmartDashboardNumber driveSeconds = new SmartDashboardNumber("Autos/auto-drive-seconds", 3.5);
-    private static SmartDashboardNumber driveSecondsDepot = new SmartDashboardNumber("Autos/auto-drive-seconds", 3.5);
+    private static SmartDashboardNumber driveSecondsDepot = new SmartDashboardNumber("Autos/auto-drive-seconds", 2);
     private static SmartDashboardNumber preloadSeconds = new SmartDashboardNumber("Autos/preload-wiat-seconds", 7);
-    private static SmartDashboardNumber depotShootSeconds = new SmartDashboardNumber("Autos/depot-shoot-seconds", 4);
+    private static SmartDashboardNumber depotShootSeconds = new SmartDashboardNumber("Autos/depot-shoot-seconds", 7);
     private static SmartDashboardNumber waitSeconds = new SmartDashboardNumber("Autos/wait-seconds", 0);
 
     public static Command awayHubPreload(){
@@ -37,6 +38,17 @@ public class Autos {
             shooter.shootCommandHub(),
             Commands.waitSeconds(shootSeconds.getNumber()),
             shooter.stopShooterCommand()
+        );
+    }
+    
+    public static Command preloadsZeroIntake(){
+        return Commands.sequence(
+            Commands.runOnce(() -> tank.setStateAuto()),
+            intake.resetIntakeCommand(),
+            shooter.shootAutonmousCommand(),
+            Commands.waitSeconds(7),
+            shooter.stopShooterCommand(),
+            Commands.runOnce(() -> tank.setStateDriving())
         );
     }
     //shoots preloads goes to middle and intakes
@@ -89,7 +101,7 @@ public class Autos {
             Commands.parallel(
                 Commands.sequence(
                     intake.runIntakeCommand(),
-                    Commands.waitSeconds(10),
+                    Commands.waitSeconds(7),
                     intake.stopIntakeRollerCommand()
                 ),
                 Commands.sequence(
@@ -98,13 +110,23 @@ public class Autos {
                     Commands.runOnce(() -> tank.drive(0,0), tank)
                 )
             ),
-            // Commands.runOnce(() -> tank.setStateAutoAlign()),
-            // tank.turnToAngleCommand(),
-            // Commands.waitUntil(() -> tank.isAtAngle()),
-            // tank.stopTurnToAngleCommand(),
-            // shooter.autoShootCommand(),
-            // Commands.waitSeconds(depotShootSeconds.getNumber()),
-            // shooter.stopShooterCommand()
+            Commands.runOnce(() -> tank.setStateAutoAlign()),
+            tank.turnToAngleCommand(),
+            Commands.waitUntil(() -> tank.isAtAngle()),
+            tank.stopTurnToAngleCommand(),
+            Commands.runOnce(() -> tank.setStateAuto()),
+            Commands.parallel(
+                Commands.sequence(
+                shooter.shootAutonmousCommandDepot(),
+                Commands.waitSeconds(depotShootSeconds.getNumber()),
+                shooter.stopShooterCommand()
+                ),
+                Commands.sequence(
+                    Commands.waitSeconds(3),
+                    intake.deployIntakeCommand(),
+                    intake.stowIntakeCommand()
+                )
+            ),
             Commands.runOnce(() -> tank.setStateDriving())
         );
     }

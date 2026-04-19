@@ -17,12 +17,17 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Tank;
 
 public class Robot extends LoggedRobot {
   private Command m_autonomousCommand;
   public static final boolean doReplay = false;
   private final RobotContainer m_robotContainer;
-  // Tank 
+  Tank tank  = Tank.getInstance();
+  Shooter shooter = Shooter.getInstance();
+  Intake intake = Intake.getInstance();
 
   public Robot() {
 
@@ -78,7 +83,10 @@ public class Robot extends LoggedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
-    
+    shooter.stopShooterCommand();
+    intake.stopIntakeRollerCommand();
+    tank.drive(0,0);
+    tank.setStateDriving();
   }
 
   @Override

@@ -3,6 +3,9 @@ package frc.robot.subsystems;
 import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.littletonrobotics.junction.Logger;
 
+// import com.studica.frc.*;
+
+
 import com.ctre.phoenix6.Utils;
 import com.pathplanner.lib.config.RobotConfig;
 import com.revrobotics.PersistMode;
@@ -35,6 +38,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 import frc.robot.RobotContainer;
 import frc.robot.vision.LimelightHelpers;
 import redrocklib.wrappers.logging.SmartDashboardBoolean;
@@ -64,10 +68,10 @@ public class Tank extends SubsystemBase{
     private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
     private SmartDashboardNumber maxDriveMperS = new SmartDashboardNumber("Tank/max-drive-m/s", 0.2);
     private SmartDashboardNumber maxTurnMperS = new SmartDashboardNumber("Tank/max-turn-m/s", 0.2);
-    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.025); //TODO
+    private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.017); //TODO
     private SmartDashboardNumber turnKi = new SmartDashboardNumber("Tank/Ki", 0); //TODO
     private SmartDashboardNumber turnKd = new SmartDashboardNumber("Tank/Kd", 0.003); //TODO
-    private SmartDashboardNumber turnKs = new SmartDashboardNumber("Tank/Ks", 0.35);
+    private SmartDashboardNumber turnKs = new SmartDashboardNumber("Tank/Ks", 0.3);
 
     private SmartDashboardNumber ambiguityThreshold = new SmartDashboardNumber("Limelight/ambiguity-threshold", 0.8);
     private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 5);
@@ -96,6 +100,8 @@ public class Tank extends SubsystemBase{
         VecBuilder.fill(encoderStDev[0], encoderStDev[1], encoderStDev[2]),
         VecBuilder.fill(visionStDev[0], visionStDev[1], visionStDev[2])
     );
+
+    // private final AHRS m_gyro = new AHRS(AHRS.NavXComType.kMXP_SPI);
 
     private boolean autoAlignActive = false;
     private boolean turnSlowActive = false;
@@ -455,8 +461,8 @@ public class Tank extends SubsystemBase{
 
         angleToTarget = getAngleToTurn();
         robotAngle = getRobotPose().getRotation().getDegrees();
-        SmartDashboard.putNumber("Tank/angle-to-target", angleToTarget);
-        SmartDashboard.putNumber("Tank/current-robot-angle", robotAngle);
+        SmartDashboard.putNumber("Tank/angle-to-target", ((int)(angleToTarget*10))/10.0);
+        SmartDashboard.putNumber("Tank/current-robot-angle", ((int)(robotAngle))/10.0);
         SmartDashboard.putData("Limelight/limelight-pos", limelightPos);
 
         SmartDashboard.putNumber("Tank/robot-speed", getRobotChassisSpeeds().vxMetersPerSecond);
