@@ -30,7 +30,7 @@ public class Intake extends SubsystemBase{
     SparkClosedLoopController rollerMotorController2 = rollerMotor2.getClosedLoopController();
     SparkClosedLoopController rollerMotorController = rollerMotor.getClosedLoopController();
     
-    SmartDashboardNumber kPHinge = new SmartDashboardNumber( "Intake/kPHinge",0.08);
+    SmartDashboardNumber kPHinge = new SmartDashboardNumber( "Intake/kPHinge",0.02);
     SmartDashboardNumber kIHinge = new SmartDashboardNumber( "Intake/kIHinge",0.0);
     SmartDashboardNumber kDHinge = new SmartDashboardNumber( "Intake/kDHinge",0.02);
     SmartDashboardNumber maxVelocitytHinge = new SmartDashboardNumber("Intake/MaxVelocityHinge", .00020);
@@ -50,6 +50,7 @@ public class Intake extends SubsystemBase{
 
     SmartDashboardNumber intakePos = new SmartDashboardNumber("Intake/intake-position", 0);
     SmartDashboardNumber rollerSpeed = new SmartDashboardNumber("Intake/roller-speed", 0.57);
+    SmartDashboardNumber rollerSpeedSlow = new SmartDashboardNumber("Intake/roller-speed", 0.3);
 
     SparkFlexConfig hingeConfig = new SparkFlexConfig();
     SparkFlexConfig rollerConfig = new SparkFlexConfig();
@@ -103,6 +104,10 @@ public class Intake extends SubsystemBase{
         this.setIntakeSpeed(-rollerSpeed.getNumber());
         Logger.recordOutput("Intake/Status", "INTAKING");
     }
+    private void startIntakingSlow(){
+        this.setIntakeSpeed(-rollerSpeed.getNumber());
+        Logger.recordOutput("Intake/Status", "INTAKING");
+    }
     private void startIntakingMore(){
         this.setIntakeSpeed(-0.6);
         Logger.recordOutput("Intake/Status", "INTAKING");
@@ -142,6 +147,10 @@ public class Intake extends SubsystemBase{
 
         return Commands.runOnce(() -> this.startIntaking(), this);
     }
+    public Command spinRollerSlowCommand(){
+
+        return Commands.runOnce(() -> this.startIntakingSlow(), this);
+    }
 
     public Command spinRollerCommandMore(){
         return Commands.runOnce(() -> this.startIntaking(), this);
@@ -160,6 +169,13 @@ public class Intake extends SubsystemBase{
     }
 
     public Command deployIntakeCommand(){
+        return Commands.sequence(
+            Commands.runOnce(() -> this.stowIntake(), this)
+            // this.stopIntakeRollerCommand()
+        );
+    }
+
+    public Command deployIntakeSlowCommand(){
         return Commands.sequence(
             Commands.runOnce(() -> this.stowIntake(), this)
             // this.stopIntakeRollerCommand()

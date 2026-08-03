@@ -58,19 +58,7 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    // RobotConfig config;
-    // try{
-    //   config = RobotConfig.fromGUISettings();
-    // }catch (Exception exception){
-    //   exception.printStackTrace();
-    // }
-    // driveStick.leftBumper()
-    //   .onTrue(shooter.autoAimShootCommand())
-    //   .onFalse(shooter.stopShooterCommand());
-    // driveStick.rightTrigger(0.25)
-    //   .onTrue(shooter.decideWhatShoot())
-    //   .onFalse(shooter.stopShooterCommand());
-      
+    // ---------------------------------Start selecting for non-petting zoo--------------------------------------//
     driveStick.rightTrigger(0.25)
       .onTrue(shooter.autoShootCommand())
       .onFalse(shooter.stopShooterCommand());
@@ -110,28 +98,20 @@ public class RobotContainer {
     driveStick.x() //Stows intake then zero it there
       .onTrue(intake.resetIntakeCommand());
 
-    // driveStick.a()
-    //   .onTrue(shooter.shootLobCommand())
+  // -----------------------------------Stop selecting for non-petting zoo---------------------------------------//
+  //------------------------------------Start selecting for petting zoo------------------------------------------//
+    // driveStick.b()
+    //   .onTrue(intake.deployIntakeCommand())
+    //   .onFalse(intake.stowIntakeCommand());
+    // driveStick.x() 
+    //   .onTrue(intake.resetIntakeCommand());
+    // driveStick.rightBumper()
+    //   .onTrue(intake.spinRollerSlowCommand())
+    //   .onFalse(intake.stopIntakeRollerCommand());
+    // driveStick.rightTrigger(0.25)
+    //   .onTrue(shooter.shootCommandHub())
     //   .onFalse(shooter.stopShooterCommand());
-    
-    // driveStick.leftBumper()
-    //   .onTrue(Commands.runOnce(() -> tank.setSlowActive(true)))
-    //   .onFalse(Commands.runOnce(() -> tank.setSlowActive(false)));
-
-    // AutoBuilder.configure(
-    //   () -> tank.getRobotPose(),
-    //   (Pose2d pos) -> tank.resetPos(pos),
-    //   () -> tank.getRobotChassisSpeeds(), 
-    //   (speeds, feedforwards) -> tank.driveRobotRelative(speeds), 
-    //   new PPLTVController(0.02), 
-    //   tank.getRobotConfig(), 
-    //   () -> {
-    //     if(DriverStation.getAlliance().isPresent())
-    //       return DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
-    //     return false;
-    //   }, 
-    //   tank
-    // );
+  //------------------------------------Stop selecting for petting zoo-----------------------------------------//
     
   }
     

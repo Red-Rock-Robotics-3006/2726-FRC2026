@@ -72,12 +72,12 @@ public class Shooter extends SubsystemBase{
     InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
         Map.entry(1.6, 2350.0), 
         Map.entry(2.0, 2420.0), 
-        Map.entry(2.11, 2500.0), 
-        Map.entry(2.61, 2620.0), 
-        Map.entry(3.0, 2730.0), 
-        Map.entry(3.52, 2980.0), 
-        Map.entry(4.15, 3140.0), 
-        Map.entry(4.74, 3200.0)
+        Map.entry(2.11, 2770.0), 
+        Map.entry(2.61, 2850.0), 
+        Map.entry(3.0, 3020.0), 
+        Map.entry(3.52, 3270.0), 
+        Map.entry(4.15, 3590.0), 
+        Map.entry(4.74, 3700.0)
     ); 
     
     // InterpolatingDoubleTreeMap table = InterpolatingDoubleTreeMap.ofEntries(
@@ -92,13 +92,13 @@ public class Shooter extends SubsystemBase{
     // ); 
     private double targetRPM = 0.0;
 
-    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 3216); //TODO
+    private SmartDashboardNumber hubShooterSpeed = new SmartDashboardNumber("Shooter/hubShooterSpeed", 2300); //TODO
     private SmartDashboardNumber lobShooterSpeed = new SmartDashboardNumber("Shooter/lobShooterSpeed", 3500); //TODO
     private SmartDashboardNumber autonomousShootSpeed = new SmartDashboardNumber("Shooter/autonomous-shoot-speed", 3000); //TODO
     private SmartDashboardNumber autonomousShootSpeedDepot = new SmartDashboardNumber("Shooter/autonomous-shoot-speed", 3807); //TODO
     private SmartDashboardNumber awayHubShooterSpeed = new SmartDashboardNumber("Shooter/awayHubShooterSpeed", 3200); //TODO
     private SmartDashboardNumber backwardsShooterSpeed = new SmartDashboardNumber("Shooter/backwardsShooterSpeed", -1000); //TODO
-    private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 2.5);
+    private SmartDashboardNumber speedUpSec = new SmartDashboardNumber("Shooter/speed-up-seconds", 0.5);
     private SmartDashboardNumber speedUpSecLob = new SmartDashboardNumber("Shooter/speed-up-seconds-lob", 0.7);
     private SmartDashboardNumber speedUpSecLobAuto = new SmartDashboardNumber("Shooter/speed-up-seconds-lob-auto", 2);
     private SmartDashboardNumber indexSpeed = new SmartDashboardNumber("Shooter/indexSpeed", 0.3); //TODO
@@ -106,7 +106,7 @@ public class Shooter extends SubsystemBase{
     private SmartDashboardNumber indexKi = new SmartDashboardNumber("Shooter/indexKi", 0); //TODO
     private SmartDashboardNumber indexKd = new SmartDashboardNumber("Shooter/indexKd", 0); //TODO
     private SmartDashboardBoolean isAtShooterSpeed = new SmartDashboardBoolean("Shooter/is-at-shooter-speed",false);
-    private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 2.4);
+    private SmartDashboardNumber shootCommandThreshold = new SmartDashboardNumber("Shooter/shoot-command-threshold", 6); //TODO 2.4 in comp
     private SmartDashboardNumber lerpOffset = new SmartDashboardNumber("Shooter/lerp-offset", 0);
     private SmartDashboardNumber shooterWaitSeconds = new SmartDashboardNumber("Shooter/shooter-wait-seconds", 1.5);
     private boolean isShooting = false;

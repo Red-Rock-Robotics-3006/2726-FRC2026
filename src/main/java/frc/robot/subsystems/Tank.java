@@ -64,8 +64,8 @@ public class Tank extends SubsystemBase{
     private double limelightAngle = 0.0;
     private int[] hubTags; //TODO go to limelight Point of Intrest tab and set the offsets so Tx is 0 at middle of hub
     
-    private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.8);
-    private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.8);
+    private SmartDashboardNumber maxDrive = new SmartDashboardNumber("Tank/maxDrive", 0.3);
+    private SmartDashboardNumber maxTurn = new SmartDashboardNumber("Tank/maxTurn", 0.3);
     private SmartDashboardNumber maxDriveMperS = new SmartDashboardNumber("Tank/max-drive-m/s", 0.2);
     private SmartDashboardNumber maxTurnMperS = new SmartDashboardNumber("Tank/max-turn-m/s", 0.2);
     private SmartDashboardNumber turnKp = new SmartDashboardNumber("Tank/Kp", 0.017); //TODO
@@ -74,7 +74,7 @@ public class Tank extends SubsystemBase{
     private SmartDashboardNumber turnKs = new SmartDashboardNumber("Tank/Ks", 0.3);
 
     private SmartDashboardNumber ambiguityThreshold = new SmartDashboardNumber("Limelight/ambiguity-threshold", 0.8);
-    private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 5);
+    private SmartDashboardNumber distanceToCameraThreshold = new SmartDashboardNumber("Limelight/distance-to-camera-threshold", 1);
     
     private PIDController alignPID = new PIDController(turnKp.getNumber(), turnKi.getNumber(), turnKd.getNumber());
     private SmartDashboardNumber alignPIDTolerance = new SmartDashboardNumber("Tank/align-PID-tolerance", 5.0);
@@ -105,7 +105,7 @@ public class Tank extends SubsystemBase{
 
     private boolean autoAlignActive = false;
     private boolean turnSlowActive = false;
-    private SmartDashboardNumber slowTurnMax = new SmartDashboardNumber("Tank/slow-turn-speed-max", 0.3);
+    private SmartDashboardNumber slowTurnMax = new SmartDashboardNumber("Tank/slow-turn-speed-max", 0.2);
     private SmartDashboardNumber isAtAngleThreshold = new SmartDashboardNumber("Tank/is-at-angle-threshold", 2);
     private double distanceFromHub = 0.0;
     private double angleToTarget = 0.0;
@@ -116,6 +116,7 @@ public class Tank extends SubsystemBase{
         Driving,
         Auto
     }
+    
     private RobotState state = RobotState.Driving;
     private SmartDashboardBoolean isRed = new SmartDashboardBoolean("Tank/isRed", false);
     
