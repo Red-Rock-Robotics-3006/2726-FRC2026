@@ -59,58 +59,58 @@ public class RobotContainer {
 
   private void configureBindings() {
     // ---------------------------------Start selecting for non-petting zoo--------------------------------------//
-    driveStick.rightTrigger(0.25)
-      .onTrue(shooter.autoShootCommand())
-      .onFalse(shooter.stopShooterCommand());
+    // driveStick.rightTrigger(0.25)
+    //   .onTrue(shooter.autoShootCommand())
+    //   .onFalse(shooter.stopShooterCommand());
 
-    driveStick.leftTrigger(0.25)
-      .onTrue(shooter.shootLobCommand())
-      .onFalse(shooter.stopShooterCommand());
+    // driveStick.leftTrigger(0.25)
+    //   .onTrue(shooter.shootLobCommand())
+    //   .onFalse(shooter.stopShooterCommand());
 
-    driveStick.leftBumper()
-      .onTrue(tank.turnToAngleCommand())
-      .onFalse(tank.stopTurnToAngleCommand());
+    // driveStick.leftBumper()
+    //   .onTrue(tank.turnToAngleCommand())
+    //   .onFalse(tank.stopTurnToAngleCommand());
 
-    driveStick.b() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
-      .onTrue(intake.deployIntakeCommand())
-      .onFalse(intake.stowIntakeCommand());
+    // driveStick.b() //Deploys intake and runs intake, runs conveyor when pressed stows when not pressed
+    //   .onTrue(intake.deployIntakeCommand())
+    //   .onFalse(intake.stowIntakeCommand());
         
-    driveStick.rightBumper()
-      .onTrue(intake.spinRollerCommand())
-      .onFalse(intake.stopIntakeRollerCommand());
+    // driveStick.rightBumper()
+    //   .onTrue(intake.spinRollerCommand())
+    //   .onFalse(intake.stopIntakeRollerCommand());
 
-    driveStick.a()
-      .onTrue(intake.spinRollerCommandMore())
-      .onFalse(intake.stopIntakeRollerCommand());
+    // driveStick.a()
+    //   .onTrue(intake.spinRollerCommandMore())
+    //   .onFalse(intake.stopIntakeRollerCommand());
     
-    driveStick.y()
-      .onTrue(shooter.startIndexerCommand())
-      .onFalse(shooter.stopIndexerCommand());
+    // driveStick.y()
+    //   .onTrue(shooter.startIndexerCommand())
+    //   .onFalse(shooter.stopIndexerCommand());
 
-    driveStick.povRight() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
-      .onTrue(intake.regurgitIntakeCommand())
-      .onFalse(intake.stowIntakeCommand());
+    // driveStick.povRight() //Deploys intake and outtakes intake backward, runs conveyor and stows when not pressed
+    //   .onTrue(intake.regurgitIntakeCommand())
+    //   .onFalse(intake.stowIntakeCommand());
 
-    driveStick.povUp()
-      .onTrue(shooter.backwardShootCommand())
-      .onFalse(shooter.stopShooterCommand());
+    // driveStick.povUp()
+    //   .onTrue(shooter.backwardShootCommand())
+    //   .onFalse(shooter.stopShooterCommand());
 
-    driveStick.x() //Stows intake then zero it there
-      .onTrue(intake.resetIntakeCommand());
+    // driveStick.x() //Stows intake then zero it there
+    //   .onTrue(intake.resetIntakeCommand());
 
   // -----------------------------------Stop selecting for non-petting zoo---------------------------------------//
   //------------------------------------Start selecting for petting zoo------------------------------------------//
-    // driveStick.b()
-    //   .onTrue(intake.deployIntakeCommand())
-    //   .onFalse(intake.stowIntakeCommand());
-    // driveStick.x() 
-    //   .onTrue(intake.resetIntakeCommand());
-    // driveStick.rightBumper()
-    //   .onTrue(intake.spinRollerSlowCommand())
-    //   .onFalse(intake.stopIntakeRollerCommand());
-    // driveStick.rightTrigger(0.25)
-    //   .onTrue(shooter.shootCommandHub())
-    //   .onFalse(shooter.stopShooterCommand());
+    driveStick.b()
+      .onTrue(intake.deployIntakeCommand())
+      .onFalse(intake.stowIntakeCommand());
+    driveStick.x() 
+      .onTrue(intake.resetIntakeCommand());
+    driveStick.rightBumper()
+      .onTrue(intake.spinRollerSlowCommand())
+      .onFalse(intake.stopIntakeRollerCommand());
+    driveStick.rightTrigger(0.25)
+      .onTrue(shooter.shootCommandHub())
+      .onFalse(shooter.stopShooterCommand());
   //------------------------------------Stop selecting for petting zoo-----------------------------------------//
     
   }
